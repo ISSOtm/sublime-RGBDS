@@ -10,7 +10,7 @@
 	"variants": [
 		{
 			"name": "Compile and link",
-			"shell_cmd": "rgbasm -o ${file_path}/${file_base_name}.o ${file} && rgblink -o ${file_path}/${file_base_name} ${file_path}/${file_base_name}.o"
+			"shell_cmd": "rgbasm -o \"${file_path}/${file_base_name}.o\" \"${file}\" && rgblink -o \"${file_path}/${file_base_name}\" \"${file_path}/${file_base_name}.o\""
 		},
 		{
 			"name": "Compile, link and fix",
