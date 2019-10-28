@@ -1,0 +1,15 @@
+%YAML 1.2
+---
+name: RGBDS Output
+hidden: true
+scope: source.build_output
+contexts:
+  main:
+    - match: '(?<= )([^:(]+)\(([0-9]+)\)'
+      captures:
+        1: entity.name.filename
+        2: constant.numeric.integer.decimal
+    - match: '\b(WARNING|ERROR):'
+      scope: message.error
+    - match: '^\[.+\]$'
+      scope: comment

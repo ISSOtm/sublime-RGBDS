@@ -1,0 +1,10 @@
+<snippet>
+    <scope>source.rgbds</scope>
+    <tabTrigger>MACRO</tabTrigger>
+    <content><![CDATA[
+MACRO
+    $1
+ENDM
+]]></content>
+    <description>MACRO … ENDM</description>
+</snippet>

@@ -1,0 +1,10 @@
+<snippet>
+    <scope>source.rgbds</scope>
+    <tabTrigger>macro</tabTrigger>
+    <content><![CDATA[
+${1:label}: macro
+    $2
+endm
+]]></content>
+    <description>label: macro … endm</description>
+</snippet>

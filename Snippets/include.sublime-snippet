@@ -1,0 +1,8 @@
+<snippet>
+    <scope>source.rgbds</scope>
+    <tabTrigger>include</tabTrigger>
+    <content><![CDATA[
+include "$1"
+]]></content>
+    <description>include "…"</description>
+</snippet>

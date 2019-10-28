@@ -1,0 +1,9 @@
+{
+    "scope": "meta.annotation.section.attribute.rgbds",
+    "completions": [
+        {"trigger": "align\talign[…]", "contents": "align[$1]"},
+        {"trigger": "ALIGN\tALIGN[…]", "contents": "ALIGN[$1]"},
+        {"trigger": "bank\tbank[…]", "contents": "bank[$1]"},
+        {"trigger": "BANK\tBANK[…]", "contents": "ALIGN[$1]"}
+    ]
+}

@@ -1,0 +1,13 @@
+<snippet>
+    <scope>source.rgbds</scope>
+    <tabTrigger>rept</tabTrigger>
+    <content><![CDATA[
+${1:X} = 0
+rept
+	$2
+$1 = $1 + 1
+endr
+	purge $1
+]]></content>
+    <description>rept w/ counter</description>
+</snippet>

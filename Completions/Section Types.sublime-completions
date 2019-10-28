@@ -1,0 +1,13 @@
+{
+    "scope": "meta.annotation.section.location.rgbds",
+    "completions": [
+        "rom0", "ROM0",
+        "romx", "ROMX",
+        "vram", "VRAM",
+        "sram", "SRAM",
+        "wram0","WRAM0",
+        "wramx","WRAMX",
+        "oam",  "OAM",
+        "hram", "HRAM"
+    ]
+}

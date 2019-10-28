@@ -1,0 +1,327 @@
+%YAML 1.2
+---
+# See http://www.sublimetext.com/docs/3/syntax.html
+name: RGBDS
+file_extensions:
+  - asm
+  - z80
+  - rgbasm
+  - inc
+scope: source.rgbds
+
+# Protip: to check for non-suffixed scopes, use this:
+# ^\s*scope:.+(?<!rgbds)\n
+contexts:
+  prototype:
+    - include: comments
+    - include: bracket_expansions
+    - include: macro_escapes
+
+
+  main:
+    - include: sections
+    - include: include
+    - include: declaration
+    - include: macros
+    - include: rept
+    - include: keywords
+    - include: labels # This needs to be late enough that it doesn't override declarations, includes, etc.
+    - include: strings
+    - include: constants
+    - include: operators
+    - include: instructions
+
+
+  comments:
+    - match: ';'
+      scope: punctuation.definition.comment.rgbds
+      push:
+        - meta_scope: comment.line.rgbds
+        - meta_include_prototype: false
+        - match: (?=\n)
+          pop: true
+
+
+  bracket_expansions:
+    - match: '}'
+      scope: invalid.illegal.rgbds
+    - match: '({)([bdxX]:)?'
+      captures:
+        1: punctuation.expansion.begin.rgbds
+        2: expansion-qualifier.rgbds
+      push:
+        - meta_scope: bracket-expansion.rgbds
+        - meta_include_prototype: false
+        - include: constants
+        - match: '}'
+          scope: punctuation.expansion.end.rgbds
+          pop: true
+
+
+  macro_escapes:
+    - match: '\\[@1-9]'
+      scope: variable.parameter.rgbds
+    - match: '\\0'
+      scope: invalid.illegal.rgbds
+
+
+
+  sections:
+    - match: '^\s*(SECTION|section)'
+      scope: meta.annotation.section.rgbds
+      captures:
+        1: keyword.other.rgbds
+      push: section_name
+
+  section_name:
+    - meta_content_scope: meta.annotation.section.name.rgbds
+    - include: strings
+    - match: ','
+      set: section_location
+
+  section_location:
+    - meta_content_scope: meta.annotation.section.location.rgbds
+    - match: '\b(rom0|ROM0|romx|ROMX|vram|VRAM|sram|SRAM|wram0|WRAM0|wramx|WRAMX|oam|OAM|hram|HRAM)\b'
+      scope: storage.type.rgbds
+    - match: '\b(home|HOME|code|CODE|data|DATA|bss|BSS)\b'
+      scope: invalid.deprecated.rgbds
+    - match: ','
+      scope: punctuation.separator.rgbds
+      set: section_attributes
+    - match: '\['
+      push:
+        - include: constants
+        - match: '\]'
+          pop: true
+        - match: '(?=\n)'
+          pop: true
+    - match: '(?=\n)'
+      pop: true
+
+  section_attributes:
+    - meta_content_scope: meta.annotation.section.attribute.rgbds
+    - match: '(align|ALIGN|bank|BANK)'
+      scope: storage.type.rgbds
+    - match: ','
+      scope: punctuation.separator.rgbds
+    - match: '\['
+      push:
+        - include: constants
+        - match: '\]'
+          pop: true
+        - match: '(?=\n)'
+          pop: true
+    - match: '(?=\n)'
+      pop: true
+
+
+  include:
+    - match: '\b(include|INCLUDE|incbin|INCBIN)\b'
+      scope: keyword.control.import.rgbds
+    - include: strings
+
+
+  declaration:
+    - match: '^(\S+)\s+(equ|EQU|rb|RB|rw|RW|rl|RL)\b'
+      captures:
+        1: variable.other.constant.rgbds
+        2: keyword.declaration.variable.rgbds
+    - match: '^(\S+)\s+(set|SET)\b'
+      captures:
+        1: variable.other.readwrite.rgbds
+        2: keyword.operator.assignment.rgbds
+    - match: '^(\S+)\s+(=)\b'
+      captures:
+        1: variable.other.readwrite.rgbds
+        2: keyword.operator.assignment.rgbds
+    - match: '^(\S+)\s+(equs|EQUS)\b'
+      captures:
+        1: variable.other.constant.rgbds
+        2: keyword.declaration.variable.rgbds
+
+
+  macros:
+    - match: '^(\S+)\s*:\s*(macro|MACRO)\b'
+      captures:
+        1: entity.name.rgbds
+        2: keyword.declaration.function.rgbds
+      embed: 'main'
+      embed_scope: meta.block.rgbds
+      escape: '\b(endm|ENDM)\b'
+      escape_captures:
+        1: keyword.other.rgbds
+
+
+  rept:
+    - match: '\b(rept|REPT)\b'
+      captures:
+        1: keyword.control.loop.for.rgbds
+      embed: 'main'
+      embed_scope: meta.block.rgbds
+      escape: '\b(endr|ENDR)\b'
+      escape_captures:
+        1: keyword.control.loop.end.rgbds
+
+
+  keywords:
+    - match: '(?i)\b(if|IF)\b'
+      scope: keyword.control.conditional.if.rgbds
+    - match: '(?i)\b(elif|ELIF)\b'
+      scope: keyword.control.conditional.elseif.rgbds
+    - match: '(?i)\b(else|ELSE)\b'
+      scope: keyword.control.conditional.else.rgbds
+    - match: '(?i)\b(endc|ENDC)\b'
+      scope: keyword.control.conditional.end.rgbds
+    - match: '(?i)\b(union|UNION|nextu|NEXTU)\b'
+      scope: keyword.declaration.union.rgbds
+    - match: '(?i)\b(endu|ENDU)\b'
+      scope: keyword.other.rgbds
+    - match: '(?i)\b(db|DB|dw|DW|dl|DL|ds|DS)\b'
+      scope: keyword.declaration.variable.rgbds
+    - match: '(?i)\b(pushs|PUSHS|pops|POPS|rsreset|RSRESET|rsset|RSSET|export|EXPORT|global|GLOBAL|purge|PURGE|printt|PRINTT|printv|PRINTV|printi|PRINTI|printf|PRINTF|newcharmap|NEWCHARMAP|setcharmap|SETCHARMAP|pushc|PUSHC|popc|POPC|pusho|PUSHO|popo|POPO)\b'
+      scope: keyword.other.rgbds
+    - match: '(?i)\b(fail|FAIL|warn|WARN)\b'
+      scope: keyword.control.flow.throw.rgbds
+    - match: '(?i)\b(import|IMPORT)\b'
+      scope: invalid.deprecated.rgbds
+
+
+  labels:
+    - match: '^([^\s.]*\.[^\s:]+)(:{0,2})'
+      captures:
+        1: entity.name.local.rgbds
+        2: keyword.label.rgbds
+    - match: '^([^\s:]+)(::)'
+      captures:
+        1: entity.name.exported.rgbds
+        2: keyword.label.rgbds
+    - match: '^([^\s.:]+)(:?)'
+      captures:
+        1: entity.name.internal.rgbds
+        2: keyword.label.rgbds
+
+
+  strings:
+    - match: '"'
+      scope: punctuation.definition.string.begin.rgbds
+      push:
+        - meta_include_prototype: false
+        - meta_scope: string.quoted.double.rgbds
+        - include: string_escapes
+        - include: bracket_expansions
+        - match: '"'
+          scope: punctuation.definition.string.end.rgbds
+          pop: true
+        - match: '(?=\n)'
+          scope: invalid.illegal.rgbds
+          pop: true
+
+  string_escapes:
+    - include: macro_escapes
+    - match: '\\[\\"\x27,{}nt]' # HACK: using a single quote breaks the YAML parser, using the escape sequence instead...
+      scope: constant.character.escape.rgbds
+    - match: '\\[^\\"\x27,{}nt]'
+      scope: invalid.illegal.rgbds
+
+
+  constants:
+    - include: functions
+    - match: '(@|_PI|_RS|__LINE__|__FILE__|__DATE__|__TIME__|__ISO_8601_LOCAL__|__ISO_8601_UTC__|__UTC_YEAR__|__UTC_MONTH__|__UTC_DAY__|__UTC_HOUR__|__UTC_MINUTE__|__UTC_SECOND__|__RGBDS_MAJOR__|__RGBDS_MINOR__|__RGBDS_PATCH__)'
+      scope: constant.language.rgbds
+    - match: '_NARG'
+      scope: variable.parameter.rgbds
+    - match: '\b-?[0-9]+\.[0-9]+\b'
+      scope: constant.float.rgbds
+    - match: '\$[0-9a-fA-F]+\b'
+      scope: constant.numeric.integer.hexadecimal.rgbds
+    - match: '&[0-7]+'
+      scope: constant.numeric.integer.octal.rgbds
+    - match: '%[01]+'
+      scope: constant.numeric.integer.binary.rgbds
+    - match: '\b[0-9]+\b'
+      scope: constant.numeric.integer.rgbds
+    - match: '`[0123]+'
+      scope: constant.numeric.integer.other.rgbds
+
+
+  functions:
+    - match: '(div|DIV|div|MUL|sin|SIN|cos|COS|tan|TAN|asin|ASIN|acos|ACOS|atan|ATAN|atan2|ATAN2|strlen|STRLEN|strcat|STRCAT|strcmp|STRCMP|strin|STRIN|strsub|STRSUB|strupr|STRUPR|strlwr|STRLWR|bank|BANK|def|DEF|high|HIGH|low|LOW)(\()'
+      captures:
+        1: variable.function.rgbds
+        2: punctuation.section.parens.begin.rgbds
+      push:
+        - include: constants
+        - include: prototype # I have no idea why but the prototype isn't included here by default
+        - meta_scope: meta.function-call.rgbds
+        - match: '\)'
+          pop: true
+          scope: punctuation.section.parens.end.rgbds
+        - match: (?=\n)
+          pop: true
+          scope: invalid.illegal.rgbds
+
+
+  operators:
+    - match: '([-+*/%<>]|==|!=|<=|>=)'
+      scope: keyword.operator.arithmetic.rgbds
+    - match: '(~|<<|>>|&|\||\^)'
+      scope: keyword.operator.bitwise.rgbds
+    - match: '(&&|\|\||!)'
+      scope: keyword.operator.logical.rgbds
+    - match: '[\[\]]'
+      scope: punctuation.accessor.rgbds
+
+
+  instructions:
+    - include: deprecated
+    - include: no_arg_instrs
+    - include: one_arg_instrs
+    - include: two_arg_instrs
+    - include: cond_instrs
+
+  deprecated:
+    - match: '\bjp\s+\[hl\]'
+      scope: invalid.deprecated.rgbds
+
+  # Arguably, the scope to all of these should rather be `keyword`
+  # Thing is, this makes the entirety of the language red, which isn't practical no matter how to look at it
+  # I've decided to put the instructions under "variable.function.rgbds" to make them function calls
+  # If you stretch the definition enough, they call CPU functions, so it's not *wrong* per se
+  # That said, if you have a better idea that keeps readability, jump for it
+  no_arg_instrs:
+    - match: '\b(nop|rlca|rrca|stop|rla|rra|daa|cpl|scf|ccf|halt|reti|di|ei)\b'
+      scope: variable.function.rgbds
+
+  one_arg_instrs:
+    - match: '\b(inc|dec|pop|push|rst|rlc|rrc|rl|rr|sla|sra|swap|srl)\b'
+      scope: variable.function.rgbds
+      push: operand
+
+  two_arg_instrs:
+    - match: '\b(ld|add|ldi|ldd|adc|sub|sbc|and|xor|or|cp|ldh|bit|res|set)\b'
+      scope: variable.function.rgbds
+      push: two_operands
+
+  cond_instrs:
+    - match: '\b(jr|ret|jp|call)\b(?:\s+(n?[cz])\b)?'
+      captures:
+        1: variable.function.rgbds
+        2: keyword.other.rgbds
+      push: operand
+
+  operand:
+    - include: registers
+    - include: constants
+    - match: '(?=\n)'
+      pop: true
+  two_operands:
+    - include: operand
+    - match: ','
+      scope: punctuation.separator.rgbds
+      set: operand
+
+  registers:
+    - match: '(?i)\b[bcdehlaf]\b'
+      scope: entity.name.tag.rgbds
+    - match: '(?i)\b(bc|de|hl|af|sp|hli|hld)\b'
+      scope: entity.name.tag.rgbds
