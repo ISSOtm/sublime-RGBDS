@@ -1,3 +1,5 @@
 Sublime-RGBDS 1.0.0 changelog:
 
  - Fixed lack of indentation with "REPT" keyword
+
+ - Fixed nesting of macros and REPT blocks

@@ -145,22 +145,24 @@ contexts:
       captures:
         1: entity.name.rgbds
         2: keyword.declaration.function.rgbds
-      embed: 'main'
-      embed_scope: meta.block.rgbds
-      escape: '\b(endm|ENDM)\b'
-      escape_captures:
-        1: keyword.other.rgbds
+      push:
+        - match: '\b(endm|ENDM)\b'
+          scope: keyword.other.rgbds
+          pop: true
+        - meta_content_scope: meta.block.rgbds
+        - include: main
 
 
   rept:
     - match: '\b(rept|REPT)\b'
       captures:
         1: keyword.control.loop.for.rgbds
-      embed: 'main'
-      embed_scope: meta.block.rgbds
-      escape: '\b(endr|ENDR)\b'
-      escape_captures:
-        1: keyword.control.loop.end.rgbds
+      push:
+        - match: '\b(endr|ENDR)\b'
+          scope: keyword.control.loop.end.rgbds
+          pop: true
+        - meta_content_scope: meta.block.rgbds
+        - include: main
 
 
   keywords:
