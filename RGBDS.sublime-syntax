@@ -220,9 +220,11 @@ contexts:
 
   string_escapes:
     - include: macro_escapes
+    - match: '\\[\n]'
+      scope: punctuation.separator.continuation.rgbds
     - match: '\\[\\"\x27,{}nt]' # HACK: using a single quote breaks the YAML parser, using the escape sequence instead...
       scope: constant.character.escape.rgbds
-    - match: '\\[^\\"\x27,{}nt]'
+    - match: '\\[^\\"\x27,{}nt\n]'
       scope: invalid.illegal.rgbds
 
 
