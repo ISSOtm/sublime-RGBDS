@@ -1,7 +1,7 @@
 Sublime-RGBDS 1.1.0 changelog:
 
- - Allow bracket expansions and macro args in bracket expansions
+ - Allowed bracket expansions and macro args in bracket expansions
 
- - Add line continuations within strings
+ - Added line continuations within strings
 
- - Add linker script language
+ - Added linker script language
