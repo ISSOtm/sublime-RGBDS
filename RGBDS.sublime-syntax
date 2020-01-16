@@ -50,12 +50,12 @@ contexts:
         1: punctuation.expansion.begin.rgbds
         2: expansion-qualifier.rgbds
       push:
-        - meta_scope: bracket-expansion.rgbds
-        - meta_include_prototype: false
-        - include: constants
         - match: '}'
           scope: punctuation.expansion.end.rgbds
           pop: true
+        - meta_scope: bracket-expansion.rgbds
+        - include: constants
+        - include: prototype
 
 
   macro_escapes:
