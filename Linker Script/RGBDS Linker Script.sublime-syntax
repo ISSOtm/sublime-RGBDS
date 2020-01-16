@@ -1,0 +1,70 @@
+%YAML 1.2
+---
+# See http://www.sublimetext.com/docs/3/syntax.html
+name: 'Linker script'
+file_extensions:
+  - link
+scope: source.linkerscript
+
+contexts:
+  prototype:
+    - include: comments
+
+
+  main:
+    - include: banks
+    - include: commands
+    - include: sections
+
+
+  comments:
+    - match: ';'
+      scope: punctuation.definition.comment.linkerscript
+      push:
+        - meta_scope: comment.line.linkerscript
+        - meta_include_prototype: false
+        - match: (?=\n)
+          pop: true
+
+
+  strings:
+    - match: '"'
+      scope: punctuation.definition.string.begin.linkerscript
+      push:
+        - meta_include_prototype: false
+        - meta_scope: string.quoted.double.linkerscript
+        - match: '"'
+          scope: punctuation.definition.string.end.linkerscript
+          pop: true
+
+
+  numbers:
+    - match: '[0-9]+'
+      scope: constant.numeric.integer.decimal.linkerscript
+    - match: '\$[0-9a-fA-F]+'
+      scope: constant.numeric.integer.hexadecimal.linkerscript
+
+
+  arguments:
+    - include: numbers
+    - match: (?=\n)
+      pop: true
+
+
+  banks:
+    - match: '(rom0|ROM0|romx|ROMX|vram|VRAM|sram|SRAM|wram0|WRAM0|wramx|WRAMX|oam|OAM|hram|HRAM)'
+      scope: storage.modifier.linkerscript
+      push: arguments
+
+
+  commands:
+    - match: '(org|ORG|align|ALIGN)'
+      scope: keyword.operator.word.linkerscript
+      push: arguments
+    - match: '(include|INCLUDE)'
+      scope: keyword.control.import.linkerscript
+      push: strings
+
+
+  sections:
+    - include: strings

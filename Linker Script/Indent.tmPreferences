@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+    <key>scope</key>
+    <string>source.linkerscript</string>
+    <key>settings</key>
+    <dict>
+        <key>increaseIndentPattern</key>
+        <string>^([^\s])?\s*(rom0|ROM0|romx|ROMX|vram|VRAM|sram|SRAM|wram0|WRAM0|wramx|WRAMX|oam|OAM|hram|HRAM)\b</string>
+        <key>decreaseIndentPattern</key>
+        <string>^\s*(rom0|ROM0|romx|ROMX|vram|VRAM|sram|SRAM|wram0|WRAM0|wramx|WRAMX|oam|OAM|hram|HRAM)\b</string>
+    </dict>
+</dict>
+</plist>
