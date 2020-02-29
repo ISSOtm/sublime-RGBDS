@@ -3,7 +3,7 @@
     <tabTrigger>MACRO</tabTrigger>
     <content><![CDATA[
 ${1:label}: MACRO
-    $2
+    $0
 ENDM
 ]]></content>
     <description>label: MACRO … ENDM</description>

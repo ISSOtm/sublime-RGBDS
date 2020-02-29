@@ -3,7 +3,7 @@
     <tabTrigger>macro</tabTrigger>
     <content><![CDATA[
 macro
-	$1
+	$0
 endm
 ]]></content>
     <description>macro … endm</description>

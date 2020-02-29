@@ -4,7 +4,7 @@
     <content><![CDATA[
 ${1:X} = 0
 REPT
-    $2
+    $0
 $1 = $1 + 1
 ENDR
     PURGE $1

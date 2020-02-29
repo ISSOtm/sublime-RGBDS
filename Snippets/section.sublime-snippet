@@ -2,7 +2,7 @@
     <scope>source.rgbds</scope>
     <tabTrigger>section</tabTrigger>
     <content><![CDATA[
-section "${1:name}", ${2:attributes}
+section "${1:name}", ${0:attributes}
 ]]></content>
     <description>section "…", …</description>
 </snippet>
