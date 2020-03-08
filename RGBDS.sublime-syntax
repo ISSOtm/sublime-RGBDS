@@ -47,13 +47,15 @@ contexts:
       scope: invalid.illegal.rgbds
     - match: '({)([bdxX]:)?'
       captures:
-        1: punctuation.expansion.begin.rgbds
+        1: punctuation.section.interpolation.begin.rgbds
         2: expansion-qualifier.rgbds
       push:
+        - clear_scopes: 1
+        - meta_scope: meta.interpolation.rgbds
+        - meta_content_scope: source.rgbds.embedded
         - match: '}'
-          scope: punctuation.expansion.end.rgbds
+          scope: punctuation.section.interpolation.end.rgbds
           pop: true
-        - meta_scope: bracket-expansion.rgbds
         - include: constants
         - include: prototype
 
