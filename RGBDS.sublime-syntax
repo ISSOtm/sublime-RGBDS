@@ -232,6 +232,7 @@ contexts:
 
   constants:
     - include: functions
+    - include: strings
     - match: '(@|_PI|_RS|__LINE__|__FILE__|__DATE__|__TIME__|__ISO_8601_LOCAL__|__ISO_8601_UTC__|__UTC_YEAR__|__UTC_MONTH__|__UTC_DAY__|__UTC_HOUR__|__UTC_MINUTE__|__UTC_SECOND__|__RGBDS_MAJOR__|__RGBDS_MINOR__|__RGBDS_PATCH__)'
       scope: constant.language.rgbds
     - match: '_NARG'
