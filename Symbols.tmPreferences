@@ -2,21 +2,10 @@
 <plist version="1.0">
 <dict>
     <key>scope</key>
-    <string>source.rgbds entity.name.internal</string>
+    <string>source.rgbds entity.name.internal, source.rgbds entity.name.exported</string>
     <key>settings</key>
     <dict>
         <key>showInSymbolList</key>
-        <string>1</string>
-    </dict>
-</dict>
-<dict>
-    <key>scope</key>
-    <string>source.rgbds entity.name.exported</string>
-    <key>settings</key>
-    <dict>
-        <key>showInSymbolList</key>
-        <string>1</string>
-        <key>showInIndexedSymbolList</key>
         <string>1</string>
     </dict>
 </dict>
