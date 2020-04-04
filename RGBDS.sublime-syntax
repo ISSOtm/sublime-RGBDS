@@ -9,6 +9,9 @@ file_extensions:
   - inc
 scope: source.rgbds
 
+variables:
+  symbol_char: '[.a-zA-Z0-9_\\@#]'
+
 # Protip: to check for non-suffixed scopes, use this:
 # ^\s*scope:.+(?<!rgbds)\n
 contexts:
@@ -20,16 +23,26 @@ contexts:
 
   main:
     - include: sections
+    - include: assertions
     - include: include
     - include: declaration
     - include: macros
     - include: rept
+    - include: load
     - include: keywords
     - include: labels # This needs to be late enough that it doesn't override declarations, includes, etc.
-    - include: strings
-    - include: constants
-    - include: operators
     - include: instructions
+    - include: macro_calls
+
+
+  line_ending:
+    - match: (?=\n)
+      pop: true
+
+  bad_line_ending:
+    - match: (?=\n)
+      scope: invalid.illegal.rgbds
+      pop: true
 
 
   comments:
@@ -38,8 +51,7 @@ contexts:
       push:
         - meta_scope: comment.line.rgbds
         - meta_include_prototype: false
-        - match: (?=\n)
-          pop: true
+        - include: line_ending
 
 
   bracket_expansions:
@@ -56,7 +68,7 @@ contexts:
         - match: '}'
           scope: punctuation.section.interpolation.end.rgbds
           pop: true
-        - include: constants
+        - include: symbols
         - include: prototype
 
 
@@ -69,10 +81,11 @@ contexts:
 
 
   sections:
-    - match: '^\s*(SECTION|section)\b'
+    - match: '^\s*(SECTION|section)(?:\s+(UNION|union))?\b'
       scope: meta.annotation.section.rgbds
       captures:
         1: keyword.other.rgbds
+        2: keyword.other.rgbds
       push: section_name
 
   section_name:
@@ -85,20 +98,16 @@ contexts:
     - meta_content_scope: meta.annotation.section.location.rgbds
     - match: '\b(rom0|ROM0|romx|ROMX|vram|VRAM|sram|SRAM|wram0|WRAM0|wramx|WRAMX|oam|OAM|hram|HRAM)\b'
       scope: storage.type.rgbds
-    - match: '\b(home|HOME|code|CODE|data|DATA|bss|BSS)\b'
-      scope: invalid.deprecated.rgbds
     - match: ','
       scope: punctuation.separator.rgbds
       set: section_attributes
     - match: '\['
       push:
-        - include: constants
+        - include: expressions
         - match: '\]'
           pop: true
-        - match: '(?=\n)'
-          pop: true
-    - match: '(?=\n)'
-      pop: true
+        - include: line_ending
+    - include: line_ending
 
   section_attributes:
     - meta_content_scope: meta.annotation.section.attribute.rgbds
@@ -108,19 +117,50 @@ contexts:
       scope: punctuation.separator.rgbds
     - match: '\['
       push:
-        - include: constants
+        - include: expressions
         - match: '\]'
           pop: true
-        - match: '(?=\n)'
-          pop: true
-    - match: '(?=\n)'
-      pop: true
+        - include: line_ending
+    - include: line_ending
+
+
+  assertions:
+    - match: '\b(assert|ASSERT|static_assert|STATIC_ASSERT)\b'
+      scope: keyword.other.rgbds
+      push:
+        - match: '\b(warn|WARN|fail|FAIL|fatal|FATAL)\s*(,)'
+          captures:
+            1: keyword.other.rgbds
+            2: punctuation.separator.rgbds
+        - include: expressions
+        - include: line_ending
+        - match: ','
+          set:
+            - include: strings
+            - include: line_ending
 
 
   include:
-    - match: '\b(include|INCLUDE|incbin|INCBIN)\b'
+    - match: '\b(include|INCLUDE)\b'
       scope: keyword.control.import.rgbds
-    - include: strings
+      push:
+        - include: strings
+        - include: line_ending
+    - match: '\b(incbin|INCBIN)\b'
+      scope: keyword.control.import.rgbds
+      push:
+        - include: strings
+        - include: line_ending
+        - match: ','
+          scope: punctuation.separator.rgbds
+          set:
+            - include: expressions
+            - include: bad_line_ending
+            - match: ','
+              scope: punctuation.separator.rgbds
+              set:
+                - include: expressions
+                - include: line_ending
 
 
   declaration:
@@ -128,30 +168,37 @@ contexts:
       captures:
         1: variable.other.constant.rgbds
         2: keyword.declaration.variable.rgbds
+      push: operand
     - match: '^(\S+)\s+(set|SET)\b'
       captures:
         1: variable.other.readwrite.rgbds
         2: keyword.operator.assignment.rgbds
-    - match: '^(\S+)\s+(=)\b'
+      push: operand
+    - match: '^(\S+)\s+(=)'
       captures:
         1: variable.other.readwrite.rgbds
         2: keyword.operator.assignment.rgbds
+      push: operand
     - match: '^(\S+)\s+(equs|EQUS)\b'
       captures:
         1: variable.other.constant.rgbds
         2: keyword.declaration.variable.rgbds
+      push:
+        - include: strings
+        - include: line_ending
 
 
   macros:
-    - match: '^(\S+)\s*:\s*(macro|MACRO)\b'
+    - match: '^(\S+)\s*(:)\s*(macro|MACRO)\b'
       captures:
         1: entity.name.rgbds
-        2: keyword.declaration.function.rgbds
+        2: keyword.label.rgbds
+        3: keyword.declaration.function.rgbds
       push:
         - match: '\b(endm|ENDM)\b'
           scope: keyword.other.rgbds
           pop: true
-        - meta_content_scope: meta.block.rgbds
+        - meta_content_scope: meta.function.rgbds
         - include: main
 
 
@@ -160,38 +207,91 @@ contexts:
       captures:
         1: keyword.control.loop.for.rgbds
       push:
-        - match: '\b(endr|ENDR)\b'
-          scope: keyword.control.loop.end.rgbds
-          pop: true
-        - meta_content_scope: meta.block.rgbds
-        - include: main
+        - include: expressions
+        - match: '(?=\n)'
+          set:
+            - match: '\b(endr|ENDR)\b'
+              scope: keyword.control.loop.end.rgbds
+              pop: true
+            - meta_content_scope: meta.block.rgbds
+            - include: main
+
+  load:
+    - match: '\b(load|LOAD)\b'
+      captures:
+        1: keyword.other.rgbds
+      push:
+        - match: '(?=")'
+          push: section_name
+        - match: '(?=\n)'
+          set:
+            - match: '\b(endl|ENDL)\b'
+              scope: keyword.other.rgbds
+              pop: true
+            - meta_content_scope: meta.block.rgbds
+            - include: main
 
 
   keywords:
-    - match: '(?i)\b(if|IF)\b'
+    - match: '\b(if|IF)\b'
       scope: keyword.control.conditional.if.rgbds
-    - match: '(?i)\b(elif|ELIF)\b'
+      push: operand
+    - match: '\b(elif|ELIF)\b'
       scope: keyword.control.conditional.elseif.rgbds
-    - match: '(?i)\b(else|ELSE)\b'
+      push: operand
+    - match: '\b(else|ELSE)\b'
       scope: keyword.control.conditional.else.rgbds
-    - match: '(?i)\b(endc|ENDC)\b'
+      push: line_ending
+    - match: '\b(endc|ENDC)\b'
       scope: keyword.control.conditional.end.rgbds
-    - match: '(?i)\b(union|UNION|nextu|NEXTU)\b'
+      push: line_ending
+    - match: '\b(union|UNION|nextu|NEXTU)\b'
       scope: keyword.declaration.union.rgbds
-    - match: '(?i)\b(endu|ENDU)\b'
+      push: line_ending
+    - match: '\b(endu|ENDU)\b'
       scope: keyword.other.rgbds
-    - match: '(?i)\b(db|DB|dw|DW|dl|DL|ds|DS)\b'
-      scope: keyword.declaration.variable.rgbds
-    - match: '(?i)\b(pushs|PUSHS|pops|POPS|rsreset|RSRESET|rsset|RSSET|export|EXPORT|global|GLOBAL|purge|PURGE|printt|PRINTT|printv|PRINTV|printi|PRINTI|printf|PRINTF|newcharmap|NEWCHARMAP|setcharmap|SETCHARMAP|pushc|PUSHC|popc|POPC|pusho|PUSHO|popo|POPO)\b'
+      push: line_ending
+    - match: '\b(db|DB|dw|DW|dl|DL)\b'
       scope: keyword.other.rgbds
-    - match: '(?i)\b(fail|FAIL|warn|WARN)\b'
-      scope: keyword.control.flow.throw.rgbds
-    - match: '(?i)\b(import|IMPORT)\b'
+      push: operands
+    - match: '\b(ds|DS)\b'
+      scope: keyword.other.rgbds
+      push: two_operands
+    - match: '\b(pushs|PUSHS|pops|POPS|rsreset|RSRESET|export|EXPORT|purge|PURGE|newcharmap|NEWCHARMAP|setcharmap|SETCHARMAP|pushc|PUSHC|popc|POPC|pusho|PUSHO|popo|POPO)\b'
+      scope: keyword.other.rgbds
+      push: line_ending
+    - match: '\b(global|GLOBAL|xdef|XDEF)\b'
       scope: invalid.deprecated.rgbds
+      push: line_ending
+    - match: '\b(rsset|RSSET|printv|PRINTV|printi|PRINTI|printf|PRINTF)\b'
+      scope: keyword.other.rgbds
+      push: operand
+    - match: '\b(printt|PRINTT)\b'
+      scope: keyword.other.rgbds
+      push:
+        - include: strings
+        - include: line_ending
+    - match: '\b(fail|FAIL|warn|WARN)\b'
+      scope: keyword.control.flow.throw.rgbds
+      push:
+        - include: strings
+        - include: line_ending
+    - match: '\b(shift|SHIFT)\b'
+      scope: keyword.other.rgbds
+      push: operand
+    - match: '\b(charmap|CHARMAP)\b'
+      scope: keyword.other.rgbds
+      push:
+        - include: strings
+        - match: ','
+          scope: punctuation.separator.mapping.key-value.rgbds
+          set:
+            - include: expressions
+            - include: line_ending
 
 
   labels:
-    - match: '^([^\s.]*\.[^\s:]+)(:{0,2})'
+    - match: '^\s*([^\s.]*\.[^\s:]+)(:{0,2})'
       captures:
         1: entity.name.local.rgbds
         2: keyword.label.rgbds
@@ -199,11 +299,19 @@ contexts:
       captures:
         1: entity.name.exported.rgbds
         2: keyword.label.rgbds
-    - match: '^([^\s.:]+)(:?)'
+    - match: '^([^\s.:]+)(:)'
       captures:
         1: entity.name.internal.rgbds
         2: keyword.label.rgbds
+    - match: '^([^\s.:]+)'
+      scope: invalid.deprecated.rgbds
+      captures:
+        1: entity.name.internal.rgbds
 
+
+  expressions:
+    - include: constants
+    - include: operators
 
   strings:
     - match: '"'
@@ -216,27 +324,30 @@ contexts:
         - match: '"'
           scope: punctuation.definition.string.end.rgbds
           pop: true
-        - match: '(?=\n)'
-          scope: invalid.illegal.rgbds
-          pop: true
+        - include: bad_line_ending
 
   string_escapes:
     - include: macro_escapes
     - match: '\\[\n]'
       scope: punctuation.separator.continuation.rgbds
-    - match: '\\[\\"\x27,{}nt]' # HACK: using a single quote breaks the YAML parser, using the escape sequence instead...
+    - match: '\\[\\"\x27,{}ntr]' # HACK: using a single quote breaks the YAML parser, using the escape sequence instead...
       scope: constant.character.escape.rgbds
-    - match: '\\[^\\"\x27,{}nt\n]'
+    - match: '\\[^\\"\x27,{}ntr\n]'
       scope: invalid.illegal.rgbds
 
 
-  constants:
-    - include: functions
-    - include: strings
-    - match: '\b(@|_PI|_RS|__LINE__|__FILE__|__DATE__|__TIME__|__ISO_8601_LOCAL__|__ISO_8601_UTC__|__UTC_YEAR__|__UTC_MONTH__|__UTC_DAY__|__UTC_HOUR__|__UTC_MINUTE__|__UTC_SECOND__|__RGBDS_MAJOR__|__RGBDS_MINOR__|__RGBDS_PATCH__)\b'
+  symbols:
+    - match: '@'
+      scope: constant.language.rgbds
+    - match: '\b(_PI|_RS|__LINE__|__FILE__|__DATE__|__TIME__|__ISO_8601_LOCAL__|__ISO_8601_UTC__|__UTC_YEAR__|__UTC_MONTH__|__UTC_DAY__|__UTC_HOUR__|__UTC_MINUTE__|__UTC_SECOND__|__RGBDS_MAJOR__|__RGBDS_MINOR__|__RGBDS_PATCH__)\b'
       scope: constant.language.rgbds
     - match: '\b_NARG\b'
       scope: variable.parameter.rgbds
+
+  constants:
+    - include: functions
+    - include: symbols
+    - include: strings
     - match: '\b-?[0-9]+\.[0-9]+\b'
       scope: constant.float.rgbds
     - match: '\$[0-9a-fA-F]+\b'
@@ -257,19 +368,17 @@ contexts:
         1: variable.function.rgbds
         2: punctuation.section.parens.begin.rgbds
       push:
-        - include: constants
+        - include: expressions
         - include: prototype # I have no idea why but the prototype isn't included here by default
         - meta_scope: meta.function-call.rgbds
         - match: '\)'
           pop: true
           scope: punctuation.section.parens.end.rgbds
-        - match: (?=\n)
-          pop: true
-          scope: invalid.illegal.rgbds
+        - include: bad_line_ending
 
 
   operators:
-    - match: '([-+*/%<>]|==|!=|<=|>=)'
+    - match: '(==|!=|<=|>=|[-+*/%<>])'
       scope: keyword.operator.arithmetic.rgbds
     - match: '(~|<<|>>|&|\||\^)'
       scope: keyword.operator.bitwise.rgbds
@@ -280,15 +389,10 @@ contexts:
 
 
   instructions:
-    - include: deprecated
     - include: no_arg_instrs
     - include: one_arg_instrs
     - include: two_arg_instrs
     - include: cond_instrs
-
-  deprecated:
-    - match: '\bjp\s+\[hl\]'
-      scope: invalid.deprecated.rgbds
 
   # Arguably, the scope to all of these should rather be `keyword`
   # Thing is, this makes the entirety of the language red, which isn't practical no matter how to look at it
@@ -296,11 +400,12 @@ contexts:
   # If you stretch the definition enough, they call CPU functions, so it's not *wrong* per se
   # That said, if you have a better idea that keeps readability, jump for it
   no_arg_instrs:
-    - match: '\b(nop|rlca|rrca|stop|rla|rra|daa|cpl|scf|ccf|halt|reti|di|ei)\b'
+    - match: '\b(nop|rlca|rrca|rla|rra|daa|cpl|scf|ccf|halt|reti|di|ei)\b'
       scope: variable.function.rgbds
+      push: line_ending
 
   one_arg_instrs:
-    - match: '\b(inc|dec|pop|push|rst|rlc|rrc|rl|rr|sla|sra|swap|srl)\b'
+    - match: '\b(inc|dec|pop|push|stop|rst|rlc|rrc|rl|rr|sla|sra|swap|srl)\b'
       scope: variable.function.rgbds
       push: operand
 
@@ -318,17 +423,31 @@ contexts:
 
   operand:
     - include: registers
-    - include: constants
-    - match: '(?=\n)'
-      pop: true
+    - include: expressions
+    - include: line_ending
   two_operands:
     - include: operand
     - match: ','
-      scope: punctuation.separator.rgbds
+      scope: punctuation.separator.sequence.rgbds
       set: operand
+  operands:
+    - include: operand
+    - match: ','
+      scope: punctuation.separator.sequence.rgbds
+    - include: line_ending
 
   registers:
     - match: '(?i)\b[bcdehlaf]\b'
       scope: entity.name.tag.rgbds
     - match: '(?i)\b(bc|de|hl|af|sp|hli|hld)\b'
       scope: entity.name.tag.rgbds
+
+
+  macro_calls:
+    - match: '{{symbol_char}}+'
+      scope: variable.function.rgbds
+      push:
+        - meta_scope: meta.function-call.rgbds
+        - include: expressions
+        - include: registers
+        - include: line_ending
