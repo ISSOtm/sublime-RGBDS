@@ -69,7 +69,7 @@ contexts:
 
 
   sections:
-    - match: '^\s*(SECTION|section)'
+    - match: '^\s*(SECTION|section)\b'
       scope: meta.annotation.section.rgbds
       captures:
         1: keyword.other.rgbds
@@ -102,7 +102,7 @@ contexts:
 
   section_attributes:
     - meta_content_scope: meta.annotation.section.attribute.rgbds
-    - match: '(align|ALIGN|bank|BANK)'
+    - match: '\b(align|ALIGN|bank|BANK)\b'
       scope: storage.type.rgbds
     - match: ','
       scope: punctuation.separator.rgbds
@@ -233,26 +233,26 @@ contexts:
   constants:
     - include: functions
     - include: strings
-    - match: '(@|_PI|_RS|__LINE__|__FILE__|__DATE__|__TIME__|__ISO_8601_LOCAL__|__ISO_8601_UTC__|__UTC_YEAR__|__UTC_MONTH__|__UTC_DAY__|__UTC_HOUR__|__UTC_MINUTE__|__UTC_SECOND__|__RGBDS_MAJOR__|__RGBDS_MINOR__|__RGBDS_PATCH__)'
+    - match: '\b(@|_PI|_RS|__LINE__|__FILE__|__DATE__|__TIME__|__ISO_8601_LOCAL__|__ISO_8601_UTC__|__UTC_YEAR__|__UTC_MONTH__|__UTC_DAY__|__UTC_HOUR__|__UTC_MINUTE__|__UTC_SECOND__|__RGBDS_MAJOR__|__RGBDS_MINOR__|__RGBDS_PATCH__)\b'
       scope: constant.language.rgbds
-    - match: '_NARG'
+    - match: '\b_NARG\b'
       scope: variable.parameter.rgbds
     - match: '\b-?[0-9]+\.[0-9]+\b'
       scope: constant.float.rgbds
     - match: '\$[0-9a-fA-F]+\b'
       scope: constant.numeric.integer.hexadecimal.rgbds
-    - match: '&[0-7]+'
+    - match: '&[0-7]+\b'
       scope: constant.numeric.integer.octal.rgbds
-    - match: '%[01]+'
+    - match: '%[01]+\b'
       scope: constant.numeric.integer.binary.rgbds
     - match: '\b[0-9]+\b'
       scope: constant.numeric.integer.rgbds
-    - match: '`[0123]+'
+    - match: '`[0123]+\b'
       scope: constant.numeric.integer.other.rgbds
 
 
   functions:
-    - match: '(div|DIV|div|MUL|sin|SIN|cos|COS|tan|TAN|asin|ASIN|acos|ACOS|atan|ATAN|atan2|ATAN2|strlen|STRLEN|strcat|STRCAT|strcmp|STRCMP|strin|STRIN|strsub|STRSUB|strupr|STRUPR|strlwr|STRLWR|bank|BANK|def|DEF|high|HIGH|low|LOW)(\()'
+    - match: '\b(div|DIV|div|MUL|sin|SIN|cos|COS|tan|TAN|asin|ASIN|acos|ACOS|atan|ATAN|atan2|ATAN2|strlen|STRLEN|strcat|STRCAT|strcmp|STRCMP|strin|STRIN|strsub|STRSUB|strupr|STRUPR|strlwr|STRLWR|bank|BANK|def|DEF|high|HIGH|low|LOW)(\()'
       captures:
         1: variable.function.rgbds
         2: punctuation.section.parens.begin.rgbds
