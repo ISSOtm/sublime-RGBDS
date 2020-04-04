@@ -191,7 +191,7 @@ contexts:
   macros:
     - match: '^(\S+)\s*(:)\s*(macro|MACRO)\b'
       captures:
-        1: entity.name.rgbds
+        1: entity.name.function.rgbds
         2: keyword.label.rgbds
         3: keyword.declaration.function.rgbds
       push:
