@@ -1,0 +1,23 @@
+Sublime-RGBDS 1.2.0 changelog:
+
+ - Synced with RGBDS 0.4.0's changes
+
+ - Improved macro support, now treated more like functions
+
+ - Symbols are now correctly treated as such, and exported and local ones appear in the symbol list
+
+ - Snippets with tabulations will now honor space vs tabs setting
+
+ - "Code block" snippets now yield inside the block, enabling auto-completion
+
+ - Strings can now be used as constants
+
+ - Fixed bugs in indentation rules
+
+ - "BANK" snippet no longer inserts "ALIGN", oops
+
+ - "rept+counter" snippets now include rept length
+
+ - Keywords etc now check for word boundaries
+
+ - Bracket expansions are now treated as interpolations
