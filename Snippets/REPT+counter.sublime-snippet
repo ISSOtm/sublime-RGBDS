@@ -3,7 +3,7 @@
     <tabTrigger>REPT</tabTrigger>
     <content><![CDATA[
 ${1:X} = 0
-REPT
+REPT $2
 	$0
 $1 = $1 + 1
 ENDR
