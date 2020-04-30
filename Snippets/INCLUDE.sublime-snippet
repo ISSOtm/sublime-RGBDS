@@ -2,7 +2,7 @@
     <scope>source.rgbds</scope>
     <tabTrigger>INCLUDE</tabTrigger>
     <content><![CDATA[
-INCLUDE "$1"
+INCLUDE "$0"
 ]]></content>
     <description>INCLUDE "…"</description>
 </snippet>

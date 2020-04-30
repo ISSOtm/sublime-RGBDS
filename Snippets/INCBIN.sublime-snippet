@@ -2,7 +2,7 @@
     <scope>source.rgbds</scope>
     <tabTrigger>INCBIN</tabTrigger>
     <content><![CDATA[
-INCBIN "$1"
+INCBIN "$0"
 ]]></content>
     <description>INCBIN "…"</description>
 </snippet>
