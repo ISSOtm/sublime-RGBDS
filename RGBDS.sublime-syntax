@@ -10,444 +10,1054 @@ file_extensions:
 scope: source.rgbds
 
 variables:
-  symbol_char: '[.a-zA-Z0-9_\\@#]'
+  symbol_char: '[a-zA-Z0-9_\\@#]'
+  reserved: |-
+    (?:\b(?ix: # Possible values for a label that conflict with a token
+      adc|add|and|bit|call|ccf|cpl|cp|daa|dec|di|ei|halt|inc|jp|jr|ld|ldi|ldd|ldio|ldh|nop|or|pop|push|res|reti|ret|rlca|rlc|rla|rl|rrc|rrca|rra|rr|rst|sbc|scf|set|sla|sra|srl|stop|sub|swap|xor| # Instructions
+      nz|z|nc| # Conditions (`c` is in the register list)
+      af|bc|de|hl|sp|a|b|c|d|e|h|l| # Registers
+      def|bank|align|round|ceil|floor|div|mul|sin|cos|tan|asin|acos|atan|atan2|high|low|isconst|strcmp|strin|strsub|strlen|strcat|strupr|strlwr| # Functions
+      include|printt|printi|printv|printf|export|xdef|global|ds|db|dw|dl|section|purge|rsreset|rsset|incbin|charmap|newcharmap|setcharmap|fail|warn|fatal|assert|static_assert|shift|opt| # Pseudo-ops
+      macro|endm|rept|endr|load|endl|pushc|popc|union|nextu|endu|pushs|pops|pusho|popo| # Block delimiters
+      if|else|elif|endc| # Conditionals
+      wram0|vram|romx|rom0|hram|wramx|sram|oam| # Section types
+      rb|rw|equ|equs # Variable definitions (`set` is in the instruction list)
+    )\b)
 
-# Protip: to check for non-suffixed scopes, use this:
-# ^\s*scope:.+(?<!rgbds)\n
+  symbol_name: '(?:\b(?!{{reserved}}){{symbol_char}}+\b)'
+
+  condition: '(?:\b(?i:n?[cz])\b)'
+
+
+# This is written more or less following RGBDS' grammar definition
+# https://github.com/rednex/rgbds/blob/master/src/asm/asmy.y
 contexts:
   prototype:
     - include: comments
-    - include: bracket_expansions
-    - include: macro_escapes
+    - include: macro-args
+    # TODO: check if matching line continuations here makes them work magically
 
-
+  # There is no need to separate most of these, but categorization helps, and then why
+  # not just use the same one as RGBDS' grammar?
   main:
-    - include: sections
-    - include: assertions
-    - include: include
-    - include: declaration
-    - include: macros
-    - include: rept
-    - include: load
-    - include: keywords
-    - include: labels # This needs to be late enough that it doesn't override declarations, includes, etc.
-    - include: instructions
-    - include: macro_calls
-
-
-  line_ending:
-    - match: (?=\n)
-      pop: true
-
-  bad_line_ending:
-    - match: (?=\n)
-      scope: invalid.illegal.rgbds
-      pop: true
+    - include: pseudoop
+    - include: label # Make sure that this is included *after* `pseudoop`!
+    - include: cpu-command
+    - include: macro-call # Make sure that this is included *after* `pseudoop` and `label`!
+    - include: simple-pseudoop
 
 
   comments:
     - match: ';'
-      scope: punctuation.definition.comment.rgbds
+      scope: punctuation.definition.comment.begin.rgbds
       push:
-        - meta_scope: comment.line.rgbds
-        - meta_include_prototype: false
-        - include: line_ending
+        - meta_scope: comment.line.semi-colon.rgbds
+        - match: '$\n?' # Consume the newline so that completions aren't shown at the end of the line when typing comments
+          pop: true
+    - match: '^\*'
+      scope: punctuation.definition.comment.begin.rgbds
+      push:
+        - meta_scope: comment.line.asterisk.rgbds
+        - match: '$\n?'
+          pop: true
+
+  macro-args:
+    - match: '\\[1-9]'
+      scope: variable.parameter.rgbds
+    - match: '\\@'
+      scope: variable.parameter.unique.rgbds
 
 
-  bracket_expansions:
-    - match: '}'
-      scope: invalid.illegal.rgbds
-    - match: '({)([bdxX]:)?'
+
+  pseudoop:
+    - match: '^({{symbol_name}})\s+((?i:equs))'
       captures:
-        1: punctuation.section.interpolation.begin.rgbds
-        2: expansion-qualifier.rgbds
+        1: entity.name.constant.rgbds
+        2: keyword.operator.assignment.rgbds keyword.operator.word.rgbds
+      push:
+        - expect-eol
+        - expect-string
+    - match: '^({{symbol_name}})\s+((?i:equ|rb|rw(?#|rl RL is currently unsupported)))'
+      captures:
+        1: entity.name.constant.rgbds
+        2: keyword.operator.assignment.rgbds keyword.operator.word.rgbds
+      push:
+        - expect-eol
+        - expect-num-expression
+    - match: '^({{symbol_name}})\s+((?i:(set))|=)'
+      captures:
+        1: entity.name.rgbds
+        2: keyword.operator.assignment.rgbds
+        3: keyword.operator.word.rgbds
+      push:
+        - expect-eol
+        - expect-num-expression
+
+    - match: '^({{symbol_name}})\s*(:)\s*((?i:macro))\b'
+      scope: meta.function.rgbds
+      captures:
+        1: entity.name.macro.rgbds
+        2: keyword.declaration.rgbds
+        3: keyword.declaration.macro.rgbds
+      push:
+        - macro-body
+        - expect-eol
+
+  macro-body:
+    - meta_scope: meta.block.macro.rgbds
+    - match: '\b(?i:endm)\b'
+      scope: keyword.declaration.end.macro.rgbds
+      set: expect-eol # Implicit `pop` here!
+    - match: '\b(?i:shift)\b'
+      scope: keyword.operator.assignment.rgbds
+      push: expect-eol
+    - include: main
+
+  label:
+    # Exported local lab1el
+    - match: '^\s*((?!{{reserved}}){{symbol_char}}*(\.){{symbol_name}})\s*(::)'
+      captures:
+        1: entity.name.local.exported.rgbds
+        2: punctuation.accessor.dot.rgbds
+        3: keyword.declaration.export.rgbds
+    # Non-exported local label
+    - match: '^\s*((?!{{reserved}}){{symbol_char}}*(\.){{symbol_name}})\s*(:)?' # Local labels don't need a colon following their declaration
+      captures:
+        1: entity.name.local.rgbds
+        2: punctuation.accessor.dot.rgbds
+        3: keyword.declaration.rgbds
+    # Exported label
+    - match: '^({{symbol_name}})\s*(::)'
+      captures:
+        1: entity.name.exported.rgbds
+        2: keyword.declaration.export.rgbds
+    # Label
+    - match: '^({{symbol_name}})\s*(:)'
+      captures:
+        1: entity.name.internal.rgbds
+        2: keyword.declaration.rgbds
+    # Non-local label without a colon
+    - match: '^{{symbol_name}}'
+      scope: entity.name.internal.rgbds invalid.deprecated.rgbds
+
+
+
+  cpu-command:
+    # Instructions without args
+    - match: '\b(?i:ccf|cpl|daa|di|ei|halt|nop|reti|rla|rlca|rra|rrca|scf)\b'
+      scope: variable.function.instruction.rgbds
+      push: expect-eol
+    # Instructions accepting a single reg8
+    - match: '\b(?i:rl|rlc|rr|rrc|sla|sra|srl|swap)\b'
+      scope: variable.function.instruction.rgbds
+      push:
+        - expect-eol
+        - expect-reg8
+    # Instructions accepting a single reg16
+    - match: '\b(?i:push|pop)\b'
+      scope: variable.function.instruction.rgbds
+      push:
+        - expect-eol
+        - expect-reg16
+    # Instructions accepting either a single reg8 or reg16
+    - match: '\b(?i:dec|inc)\b'
+      scope: variable.function.instruction.rgbds
+      push:
+        - expect-eol
+        - expect-decinc-lhs
+    # Instructions accepting a single (perhaps optional) expression
+    - match: '\b(?i:rst|stop)\b'
+      scope: variable.function.instruction.rgbds
+      push:
+        - expect-eol
+        - expect-num-expression # Intentionally optional
+    # Instructions accepting a single expression, then a single reg8
+    - match: '\b(?i:bit|res|set)\b'
+      scope: variable.function.instruction.rgbds
+      push:
+        - expect-eol
+        - expect-reg8
+        - expect-comma
+        - expect-num-expression
+    # Instructions accepting a single (optional) condition
+    - match: '\b(?i:ret)\b'
+      scope: variable.function.instruction.rgbds
+      push:
+        - expect-eol
+        - expect-ret-cond
+    # Instructions accepting a single optional condition, then a single expression
+    - match: '\b(?i:call|jp|jr)\b'
+      scope: variable.function.instruction.rgbds
+      push:
+        - expect-eol
+        - expect-jump-ops
+    # Instructions optionally accepting register a, then either a single reg8 or a single expression
+    - match: '\b(?i:adc|and|cp|or|sbc|sub|xor)\b'
+      scope: variable.function.instruction.rgbds
+      push:
+        - expect-eol
+        - expect-accumulator-ops
+    # `add` is almost the same as the above, except for `add hl, reg16`
+    - match: '\b(?i:add)\b'
+      scope: variable.function.instruction.rgbds
+      push:
+        - expect-eol
+        - expect-add-ops
+    # Instructions accepting register a, then register hl; or the reverse
+    - match: '\b(?i:ldd|ldi)\b'
+      scope: variable.function.instruction.rgbds
+      push:
+        - expect-eol
+        - expect-ldd-ops
+    # Instructions accepting register a, then a memory target; or the reverse
+    - match: '\b(?i:ldh|ldio)\b'
+      scope: variable.function.instruction.rgbds
+      push:
+        - expect-eol
+        - expect-ldh-ops
+    # `ld`... kinda does its own thing
+    - match: '\b(?i:ld)\b'
+      scope: variable.function.instruction.rgbds
+      push:
+        - expect-eol
+        - expect-ld-ops
+
+  expect-decinc-lhs:
+    - include: reg16-sp
+    - include: reg8
+    - include: else-pop
+
+  expect-ret-cond:
+    - match: '{{condition}}'
+      scope: keyword.other.condition.rgbds
+      pop: true
+    - include: else-pop
+
+  expect-jump-ops:
+    - match: '{{condition}}'
+      scope: keyword.other.condition.rgbds
+      set:
+        - expect-num-expression
+        - expect-comma
+    - include: expect-num-expression
+
+  expect-add-ops:
+    - match: '\b(?i:hl)\b'
+      scope: keyword.other.register.rgbds
+      set:
+        - expect-reg16-sp
+        - expect-comma
+    - include: expect-accumulator-ops
+
+  expect-ldd-ops:
+    - match: '\b(?i:(a)|((high)\s*(\()\s*(af)\s*(\))))'
+      captures:
+        1: keyword.other.register.rgbds
+        2: meta.function-call.rgbds
+        3: support.function.rgbds
+        4: punctuation.section.arguments.begin.rgbds
+        5: keyword.other.register.rgbds
+        6: punctuation.section.arguments.end.rgbds
+      set:
+        - expect-closing-bracket
+        - expect-hl
+        - expect-opening-bracket
+        - expect-comma
+    - match: '(\[)\s*((?i:hl))\s*(\])'
+      captures:
+        1: punctuation.section.brackets.begin.rgbds
+        2: keyword.other.register.rgbds
+        3: punctuation.section.brackets.end.rgbds
+      set:
+        - expect-a
+        - expect-comma
+    - include: else-pop
+
+  expect-ldh-ops:
+    - match: '\b(?i:(a)|((high)\s*(\()\s*(af)\s*(\))))'
+      captures:
+        1: keyword.other.register.rgbds
+        2: meta.function-call.rgbds
+        3: support.function.rgbds
+        4: punctuation.section.arguments.begin.rgbds
+        5: keyword.other.register.rgbds
+        6: punctuation.section.arguments.end.rgbds
+      set:
+        - expect-closing-bracket
+        - expect-mem-expr-c
+        - expect-opening-bracket
+        - expect-comma
+    - match: '(?=\[)'
+      set:
+        - expect-a
+        - expect-comma
+        - expect-closing-bracket
+        - expect-mem-expr-c
+        - expect-opening-bracket
+    - include: else-pop
+
+  expect-ld-ops:
+    - match: '\[' # Target is a reg16, hld, hli, "$ff00+c", or an expression
+      scope: punctuation.section.brackets.begin.rgbds
+      set:
+        - match: '(?i:bc|de|hld|hli)'
+          scope: keyword.other.register.rgbds
+          set:
+            - expect-a
+            - expect-comma
+            - expect-closing-bracket
+        - match: '(?i:(\$ff00)\s*(\+)\s*(c))'
+          captures:
+            1: constant.numeric.integer.decimal.rgbds
+            2: keyword.operator.arithmetic.rgbds
+            3: keyword.other.register.rgbds
+          set:
+            - expect-a
+            - expect-comma
+            - expect-closing-bracket
+        - match: '\b(?i:hl)\b'
+          scope: keyword.other.register.rgbds
+          set:
+            - expect-op8
+            - expect-comma
+            - expect-closing-bracket
+        - match: '' # "default" if none of the above apply
+          set:
+            - expect-a-sp
+            - expect-comma
+            - expect-closing-bracket
+            - expect-num-expression
+    - match: '\b(?i:sp)\b' # Target is sp
+      scope: keyword.other.register.rgbds
+      set:
+        - expect-hl-n16
+        - expect-comma
+    - match: '\b(?i:bc|de)\b' # Target is bc or de
+      scope: keyword.other.register.rgbds
+      set:
+        - expect-num-expression
+        - expect-comma
+    - match: '\b(?i:hl)\b' # Target is hl
+      scope: keyword.other.register.rgbds
+      set:
+        - expect-sp-ofs-n16
+        - expect-comma
+    - match: '\b(?i:(a)|((high)\s*(\()\s*(af)\s*(\))))' # Target is a...
+      captures:
+        1: keyword.other.register.rgbds
+        2: meta.function-call.rgbds
+        3: support.function.rgbds
+        4: punctuation.section.arguments.begin.rgbds
+        5: keyword.other.register.rgbds
+        6: punctuation.section.arguments.end.rgbds
+      set: expect-ld-a-rhs
+    # The following is basically a copy-paste of the reg8 rules, for matching reg8s
+    - match: '(?i:high)'
+      scope: support.function.rgbds
+      set:
+        - expect-op8
+        - expect-comma
+        - meta-func-call
+        - expect-arg-end
+        - expect-reg16
+        - expect-arg-begin
+    - match: '(?i:low)'
+      scope: support.function.rgbds
+      set:
+        - expect-op8
+        - expect-comma
+        - meta-func-call
+        - expect-arg-end
+        - expect-low-reg16
+        - expect-arg-begin
+    - match: '(?i:[bcdehl])'
+      scope: keyword.other.register.rgbds
+      set:
+        - expect-op8
+        - expect-comma
+    - include: else-pop # Default, if all else fails
+
+  expect-ld-a-rhs:
+    - match: ','
+      scope: punctuation.separator.arguments.rgbds
+      set:
+        - match: '\['
+          scope: punctuation.section.braces.begin.rgbds
+          set:
+            - match: '(?i:bc|de|hld|hli|hl)'
+              scope: keyword.other.register.rgbds
+              set: expect-closing-bracket
+            - match: '(?i:(\$ff00)\s*(\+)\s*(c))'
+              captures:
+                1: constant.numeric.integer.decimal.rgbds
+                2: keyword.operator.arithmetic.rgbds
+                3: keyword.other.register.rgbds
+              set: expect-closing-bracket
+            - match: ''
+              set:
+                - expect-closing-bracket
+                - expect-num-expression
+        - include: expect-op8
+    - include: else-pop
+
+  expect-accumulator-ops:
+    - match: '\b(?i:(a)|((high)\s*(\()\s*(af)\s*(\))))(?=\s*,)'
+      captures:
+        1: keyword.other.register.rgbds
+        2: meta.function-call.rgbds
+        3: support.function.rgbds
+        4: punctuation.section.arguments.begin.rgbds
+        5: keyword.other.register.rgbds
+        6: punctuation.section.arguments.end.rgbds
+      set:
+        - expect-op8
+        - expect-comma
+    - include: expect-op8
+
+  expect-a-sp:
+    - match: '\b(?i:sp)\b'
+      scope: keyword.other.register.rgbds
+      pop: true
+    - include: expect-a
+
+  expect-a:
+    - match: '\b(?i:(a)\b|((high)\s*(\()\s*(af)\s*(\))))'
+      captures:
+        1: keyword.other.register.rgbds
+        2: meta.function-call.rgbds
+        3: support.function.rgbds
+        4: punctuation.section.arguments.begin.rgbds
+        5: keyword.other.register.rgbds
+        6: punctuation.section.arguments.end.rgbds
+      pop: true
+    - include: else-pop
+
+  expect-hl-n16:
+    - match: '\b(?i:hl)\b'
+      scope: keyword.other.register.rgbds
+      pop: true
+    - include: expect-num-expression
+
+  expect-hl:
+    - match: '\b(?i:hl)\b'
+      scope: keyword.other.register.rgbds
+      pop: true
+    - include: else-pop
+
+  expect-opening-bracket:
+    - match: '\['
+      scope: punctuation.section.brackets.begin.rgbds
+      pop: true
+    - include: else-pop
+
+  expect-closing-bracket:
+    - match: '\]'
+      scope: punctuation.section.brackets.end.rgbds
+      pop: true
+    - include: else-pop
+
+  expect-mem-expr-c:
+    - match: '\b(?i:c)\b'
+      scope: keyword.other.register.rgbds
+      pop: true
+    - include: expect-num-expression
+
+  expect-op8:
+    # Unfortunately, `high()` and `low()` are ambiguous in this context: they can either
+    # be a register, or part of an expression. Disambiguate here.
+    - match: '(?=(?i:low|high)\s*\()'
+      set:
+        # This is the simplest to match, so we'll take it
+        - match: '(?=(?i:low|high)\s*\(\s*(?i:bc|de|hl|af)\s*\))'
+          set: expect-reg8
+        - match: '' # Basically a `else`
+          set: expect-num-expression
+    - include: reg8
+    - include: expect-num-expression
+
+  expect-reg8:
+    - include: reg8
+    - include: else-pop
+  reg8:
+    - match: '\b(?i:high)\b'
+      scope: support.function.rgbds
+      set:
+        - meta-func-call
+        - expect-arg-end
+        - expect-reg16
+        - expect-arg-begin
+    - match: '\b(?i:low)\b'
+      scope: support.function.rgbds
+      set:
+        - meta-func-call
+        - expect-arg-end
+        - expect-low-reg16
+        - expect-arg-begin
+    - match: '(\[)\s*((?i:hl))\s*(\])'
+      captures:
+        1: punctuation.section.brackets.begin.rgbds
+        2: keyword.other.register.rgbds
+        3: punctuation.section.brackets.end.rgbds
+      pop: true
+    - match: '\b(?i:[abcdehl])\b'
+      scope: keyword.other.register.rgbds
+      pop: true
+
+  expect-low-reg16:
+    - match: '\b(?i:af)\b'
+      scope: keyword.other.register.rgbds invalid.illegal.rgbds
+      pop: true
+    - include: expect-reg16
+
+  expect-reg16:
+    - include: reg16
+    - include: else-pop
+  reg16:
+    - match: '(?i:af|bc|de|hl)'
+      scope: keyword.other.register.rgbds
+      pop: true
+
+  expect-reg16-sp:
+    - include: reg16-sp
+    - include: else-pop
+  reg16-sp:
+    - include: reg16
+    - match: '(?i:sp)'
+      scope: keyword.other.register.rgbds
+      pop: true
+
+  expect-sp-ofs-n16:
+    - match: '\b(?i:sp)\b'
+      scope: keyword.other.register.rgbds
+      set: expect-num-expression
+    - match: '' # "default" if none of the above apply
+      set: expect-num-expression
+
+
+
+  macro-call:
+    - match: '{{symbol_name}}'
+      scope: variable.function.rgbds
+      push:
+        - meta_scope: meta.function-call.macro.rgbds
+        - match: ','
+          scope: punctuation.separator.arguments.rgbds
+        - match: $
+          pop: true
+
+
+
+  simple-pseudoop:
+    - match: '\b(?i:include)\b'
+      scope: keyword.control.import.rgbds
+      push:
+        - expect-eol
+        - expect-string
+    - match: '\b(?i:print[fvi])\b'
+      scope: keyword.other.rgbds
+      push:
+        - expect-eol
+        - expect-num-expression
+    - match: '\b(?i:printt)\b'
+      scope: keyword.other.rgbds
+      push:
+        - expect-eol
+        - expect-string
+    - match: '\b(?i:if)\b'
+      scope: keyword.control.conditional.if.rgbds
+      push:
+        - if-body
+        - expect-eol
+        - expect-num-expression
+    - match: '\b(?i:export|(global|xdef))\b'
+      scope: keyword.export.rgbds
+      captures:
+        1: invalid.deprecated.rgbds
+      push:
+        - expect-eol
+        - expect-symbol-list
+    - match: '\b(?i:db|dw|dl)\b'
+      scope: keyword.other.data.rgbds
+      push:
+        - expect-eol
+        - expect-expr-list
+    - match: '\b(?i:ds)\b'
+      scope: keyword.other.data.rgbds
+      push:
+        - expect-eol
+        - expect-optional-expression
+        - expect-num-expression
+    - match: '\b(?i:section)\b'
+      scope: keyword.declaration.section.rgbds
+      push:
+        - expect-eol
+        - expect-section-attrs
+        - expect-section-type-org
+        - expect-comma
+        - expect-string
+        - expect-section-union
+    - match: '\b(?i:rsreset)\b'
+      scope: keyword.other.rgbds
+      push: expect-eol
+    - match: '\b(?i:rsset)\b'
+      scope: keyword.other.rgbds
+      push:
+        - expect-eol
+        - expect-num-expression
+    - match: '\b(?i:union)\b'
+      scope: keyword.context.block.union.rgbds
+      push:
+        - union-body
+        - expect-eol
+    - match: '\b(?i:incbin)\b'
+      scope: keyword.control.import.bin.rgbds
+      push:
+        - expect-eol
+        - expect-optional-expression # If the one below didn't match, this shouldn't either
+        - expect-optional-expression
+        - expect-string
+    - match: '\b(?i:charmap)\b'
+      scope: keyword.declaration.charmap.entry.rgbds
+      push:
+        - expect-eol
+        - expect-num-expression
+        - expect-comma
+        - expect-string
+    - match: '\b(?i:newcharmap)\b'
+      scope: keyword.declaration.charmap.rgbds
+      push:
+        - expect-eol
+        - expect-string
+    - match: '\b(?i:setcharmap)\b'
+      scope: keyword.context.resource.charmap.rgbds
+      push:
+        - expect-eol
+        - expect-string
+    - match: '\b(?i:pushc|popc)\b'
+      scope: keyword.other.rgbds
+      push: expect-eol
+    - match: '\b(?i:load)\b'
+      scope: keyword.context.block.load.rgbds
+        - expect-eol
+        - expect-section-attrs
+        - expect-section-type
+        - expect-comma
+        - expect-string
+    - match: '\b(?i:endl)\b'
+      scope: keyword.context.block.load.end.rgbds
+      push: expect-eol
+    - match: '\b(?i:rept)\b'
+      scope: keyword.control.loop.for.rgbds
+      push:
+        - rept-body
+        - expect-eol
+        - expect-num-expression
+    - match: '\b(?i:fail|warn)\b'
+      scope: keyword.control.exception.raise.rgbds
+      push:
+        - expect-eol
+        - expect-string
+    - match: '\b(?i:assert|static_assert)\b'
+      scope: keyword.control.exception.assert.rgbds
+      push:
+        - expect-eol
+        - expect-optional-string
+        - expect-num-expression
+        - expect-assert-type # Actually optional
+    - match: '\b(?i:purge)\b'
+      scope: keyword.other.purge.rgbds
+      push:
+        - expect-eol
+        - expect-symbol-list
+    - match: '\b(?i:pushs|pops)\b'
+      scope: keyword.other.rgbds
+    - match: '\b(?i:pusho|popo)\b'
+      scope: keyword.other.rgbds
+    - match: '\b(?i:opt)\b'
+      scope: keyword.other.rgbds
+      push:
+        - expect-eol
+        - expect-symbol-list # FIXME: that's not what it really is, but close enough
+    - match: '\b(?i:align)\b'
+      scope: keyword.other.align.rgbds
+      push:
+        - expect-eol
+        - expect-optional-expression
+        - expect-num-expression
+
+  if-body:
+    - meta_content_scope: meta.block.if.rgbds
+    - match: '\b(?i:elif)\b'
+      scope: keyword.control.conditional.elseif.rgbds
+      push:
+        - expect-eol
+        - expect-num-expression
+    - match: '\b(?i:else)\b'
+      scope: keyword.control.conditional.else.rgbds
+      push: expect-eol
+    - match: '\b(?i:endc)\b'
+      scope: keyword.control.conditional.end.if.rgbds
+      set: expect-eol # Implicit `pop` here!
+    - include: main
+
+  expect-symbol-list:
+    - match: ''
+      set:
+        - expect-symbol-list_
+        - expect-symbol
+  expect-symbol-list_:
+    - match: ','
+      scope: punctuation.separator.sequence.rgbds
+      set:
+        - expect-symbol-list_
+        - expect-symbol
+    - include: else-pop
+
+  expect-expr-list:
+    - match: ''
+      set:
+        - expect-expr-list_
+        - expect-num-expression
+  expect-expr-list_:
+    - match: ','
+      scope: punctuation.separator.sequence.rgbds
+      set:
+        - expect-expr-list_
+        - expect-num-expression
+    - include: else-pop
+
+  expect-optional-expression:
+    - match: ','
+      scope: punctuation.separator.sequence.rgbds
+      set: expect-num-expression
+    - include: else-pop
+
+  expect-section-union:
+    - match: '\b(?i:union)\b'
+      scope: storage.modifier.section-union.rgbds
+      pop: true
+    - include: else-pop
+
+  expect-section-type-org:
+    - match: '\b(?i:rom0|romx|vram|sram|wram0|wramx|oam|hram)\b'
+      scope: storage.type.section.rgbds
+      set:
+        - match: '\['
+          scope: punctuation.section.brackets.begin.rgbds
+          set:
+            - expect-closing-bracket
+            - expect-num-expression
+        - include: else-pop
+    - include: else-pop
+
+  expect-section-attrs:
+    - match: ','
+      scope: punctuation.separator.sequence.rgbds
+      set:
+        - match: '\b(?i:bank)\b'
+          scope: storage.modifier.rgbds
+          set:
+            - expect-closing-bracket
+            - expect-num-expression
+            - expect-opening-bracket
+        - match: '\b(?i:align)\b'
+          scope: storage.modifier.rgbds
+          set:
+            - expect-closing-bracket
+            - expect-optional-expression
+            - expect-num-expression
+            - expect-opening-bracket
+        - include: else-pop
+    - include: else-pop
+
+  union-body:
+    - meta_content_scope: meta.block.union.rgbds
+    - match: '\b(?i:nextu)\b'
+      scope: keyword.context.block.nextu.rgbds
+      push: expect-eol
+    - match: '\b(?i:endu)\b'
+      scope: keyword.context.block.end.union.rgbds
+      set: expect-eol # Implicit `pop` here!
+    - include: main
+
+  rept-body:
+    - meta_content_scope: meta.block.rept.rgbds
+    - match: '\b(?i:endr)\b'
+      scope: keyword.control.loop.end.rgbds
+      set: expect-eol # Implicit `pop` here!
+    - include: main
+
+  expect-optional-string:
+    - match: ','
+      scope: punctuation.separator.sequence.rgbds
+      set: expect-string
+    - include: else-pop
+
+  expect-assert-type:
+    - match: '\b(?i:warn|fail|fatal)\b'
+      scope: storage.modifier.assertion.rgbds
+      pop: true
+    - include: else-pop
+
+
+
+  ## Utility scopes
+
+  # Instananeouosly pops off the stack when encountered.
+  # For an example of how it can be useful, check out `meta-func-call`.
+  pop:
+    - match: ''
+      pop: true
+
+  # Useful as a fallback, that highlighting can try to keep progressing.
+  # Usage: `- include: else-pop` at the END of the scope this should be applied in.
+  else-pop:
+    - match: '$' # Nothing strides lines in RGBDS... except line continuations, whoops.
+      pop: true
+    - match: '(?=\S)'
+      pop: true
+
+  expect-eol:
+    - match: '$'
+      pop: true
+    - match: '(?=\S)'
+      set:
+        - match: '$'
+          pop: true
+        - match: '.' # Matching one character at a time is important, so prototype can still match
+          scope: invalid.illegal.rgbds
+
+  # In a `push` or `set` chain, gives all scopes below it the following meta-scope.
+  meta-func-call:
+    - meta_scope: meta.function-call.rgbds
+    - include: pop
+
+  expect-arg-begin:
+    - match: '\('
+      scope: punctuation.section.arguments.begin.rgbds
+      pop: true
+    - include: else-pop
+
+  expect-comma:
+    - match: ','
+      scope: punctuation.separator.arguments.rgbds
+      pop: true
+    - include: else-pop
+
+  expect-arg-end:
+    - match: '\)'
+      scope: punctuation.section.arguments.end.rgbds
+      pop: true
+    - include: else-pop
+
+
+  expect-num-expression:
+    - include: num-expression
+    - include: else-pop
+  num-expression:
+    # https://rednex.github.io/rgbds/rgbasm.5.html#Numeric_Formats
+    - match: '[0-9]+(\.)[0-9]+'
+      scope: constant.numeric.float.decimal.rgbds
+      captures:
+        1: punctuation.separator.decimal.rgbds
+    - match: '\$[0-9a-fA-F]+'
+      scope: constant.numeric.integer.hexadecimal.rgbds
+    - match: '[0-9]+'
+      scope: constant.numeric.integer.decimal.rgbds
+    - match: '&[0-7]+'
+      scope: constant.numeric.integer.octal.rgbds
+    - match: '%[01]+'
+      scope: constant.numeric.integer.binary.rgbds
+    - include: string
+    - match: '`[0123]+'
+      scope: constant.numeric.integer.other.rgbds
+    # Duplicated at scope `symbol`, keep in sync
+    - match: '@'
+      scope: constant.language.rgbds
+    - match: '\b(?i:_PI|_RS|__LINE__|__FILE__|__DATE__|__TIME__|__ISO_8601_LOCAL__|__ISO_8601_UTC__|__UTC_YEAR__|__UTC_MONTH__|__UTC_DAY__|__UTC_HOUR__|__UTC_MINUTE__|__UTC_SECOND__|__RGBDS_MAJOR__|__RGBDS_MINOR__|__RGBDS_PATCH__)\b'
+      scope: constant.language.rgbds
+    - match: '\b(?i:_NARG)\b'
+      scope: variable.parameter.rgbds
+    - match: '{{symbol_name}}'
+      scope: meta.generic-name.rgbds
+    - match: '(?!{{reserved}}){{symbol_char}}*(\.){{symbol_name}}'
+      scope: meta.generic-name.local.rgbds
+      captures:
+        1: punctuation.accessor.dot.rgbds
+    - match: '\('
+      scope: punctuation.section.parens.begin.rgbds
+      push:
+        - meta_scope: meta.parens.rgbds
+        - match: '\)'
+          scope: punctuation.section.parens.end.rgbds
+          pop: true
+        - include: num-expression
+        - include: else-pop
+    # Operators
+    - match: '[-+*/%]'
+      scope: keyword.operator.arithmetic.rgbds
+    - match: '(?:[~&|^]|<<|>>)'
+      scope: keyword.operator.bitwise.rgbds
+    - match: '(?:!=|==|<=|>=|<|>)'
+      scope: keyword.operator.comparison.rgbds
+    - match: '(?:!|&&|\|\|)'
+      scope: keyword.operator.logical.rgbds
+    # Fixed-point built-ins
+    # Unary
+    - match: '\b(?i:sin|cos|tan|asin|acos|atan)\b'
+      scope: support.function.fixed-point.rgbds
+      push:
+        - meta-func-call
+        - expect-arg-end
+        - expect-num-expression
+        - expect-arg-begin
+    # Binary
+    - match: '\b(?i:div|mul|atan2)\b'
+      scope: support.function.fixed-point.rgbds
+      push:
+        - meta-func-call
+        - expect-arg-end
+        - expect-num-expression
+        - expect-comma
+        - expect-num-expression
+        - expect-arg-begin
+    # String built-ins
+    # Unary string
+    - match: '\b(?i:strlen)\b'
+      scope: support.function.string.rgbds
+      push:
+        - meta-func-call
+        - expect-arg-end
+        - expect-string
+        - expect-arg-begin
+    # Binary string
+    - match: '\b(?i:strcmp|strin)\b'
+      scope: support.function.string.rgbds
+      push:
+        - meta-func-call
+        - expect-arg-end
+        - expect-string
+        - expect-comma
+        - expect-string
+        - expect-arg-begin
+    # "Other" builtins
+    - match: '\b(?i:bank)\b'
+      scope: support.function.bank.rgbds
+      push:
+        - meta-func-call
+        - expect-arg-end
+        - expect-bank-arg
+        - expect-arg-begin
+    - match: '\b(?i:def)\b'
+      scope: support.function.def.rgbds
+      push:
+        - meta-func-call
+        - expect-arg-end
+        - expect-symbol
+        - expect-arg-begin
+    - match: '\b(?i:high|low|isconst)\b'
+      scope: support.function.rgbds
+      push:
+        - meta-func-call
+        - expect-arg-end
+        - expect-num-expression
+        - expect-arg-begin
+    # Expressions don't stride lines
+    - match: $
+      pop: true
+    # These usually signify an expression is finished
+    - match: '(?=[\),])'
+      pop: true
+
+
+  expect-bank-arg:
+    - include: string
+    - include: expect-symbol
+
+  expect-string:
+    - include: string
+    - include: else-pop
+  string:
+    - match: '"'
+      scope: punctuation.definition.string.begin.rgbds
+      set:
+        - meta_scope: meta.string.rgbds string.quoted.double.rgbds
+        - meta_include_prototype: false
+        - match: '\\[1-9@]'
+          scope: variable.parameter.rgbds
+        - match: '\\[\\",{}nrt]'
+          scope: constant.character.escape.rgbds
+        - match: '\\.'
+          scope: invalid.illegal.rgbds
+        - include: string-interpolation
+        - match: '"'
+          scope: punctuation.definition.string.end.rgbds
+          pop: true
+        - match: '$\n?'
+          scope: invalid.illegal.rgbds
+          pop: true
+    # Unary builtins
+    - match: '\b(?i:strupr|strlwr)\b'
+      scope: support.function.string.rgbds
+      set:
+        - meta-func-call
+        - expect-arg-end
+        - expect-string
+        - expect-arg-begin
+    # Binary builtin
+    - match: '\b(?i:strcat)\b'
+      scope: support.function.string.rgbds
+      set:
+        - meta-func-call
+        - expect-arg-end
+        - expect-string
+        - expect-comma
+        - expect-string
+        - expect-arg-begin
+    # Trinary..? builtin
+    - match: '\b(?i:strsub)\b'
+      scope: support.function.string.rgbds
+      set:
+        - meta-func-call
+        - expect-arg-end
+        - expect-num-expression
+        - expect-comma
+        - expect-num-expression
+        - expect-comma
+        - expect-string
+        - expect-arg-begin
+
+  string-interpolation:
+    - match: '{'
+      scope: punctuation.section.interpolation.begin.rgbds
       push:
         - clear_scopes: 1
         - meta_scope: meta.interpolation.rgbds
         - meta_content_scope: source.rgbds.embedded
+        - include: string-interpolation
         - match: '}'
           scope: punctuation.section.interpolation.end.rgbds
           pop: true
-        - include: symbols
-        - include: prototype
 
 
-  macro_escapes:
-    - match: '\\[@1-9]'
-      scope: variable.parameter.rgbds
-    - match: '\\0'
-      scope: invalid.illegal.rgbds
-
-
-
-  sections:
-    - match: '^\s*(SECTION|section)(?:\s+(UNION|union))?\b'
-      scope: meta.annotation.section.rgbds
-      captures:
-        1: keyword.other.rgbds
-        2: keyword.other.rgbds
-      push: section_name
-
-  section_name:
-    - meta_content_scope: meta.annotation.section.name.rgbds
-    - include: strings
-    - match: ','
-      set: section_location
-
-  section_location:
-    - meta_content_scope: meta.annotation.section.location.rgbds
-    - match: '\b(rom0|ROM0|romx|ROMX|vram|VRAM|sram|SRAM|wram0|WRAM0|wramx|WRAMX|oam|OAM|hram|HRAM)\b'
-      scope: storage.type.rgbds
-    - match: ','
-      scope: punctuation.separator.rgbds
-      set: section_attributes
-    - match: '\['
-      push:
-        - include: expressions
-        - match: '\]'
-          pop: true
-        - include: line_ending
-    - include: line_ending
-
-  section_attributes:
-    - meta_content_scope: meta.annotation.section.attribute.rgbds
-    - match: '\b(align|ALIGN|bank|BANK)\b'
-      scope: storage.type.rgbds
-    - match: ','
-      scope: punctuation.separator.rgbds
-    - match: '\['
-      push:
-        - include: expressions
-        - match: '\]'
-          pop: true
-        - include: line_ending
-    - include: line_ending
-
-
-  assertions:
-    - match: '\b(assert|ASSERT|static_assert|STATIC_ASSERT)\b'
-      scope: keyword.other.rgbds
-      push:
-        - match: '\b(warn|WARN|fail|FAIL|fatal|FATAL)\s*(,)'
-          captures:
-            1: keyword.other.rgbds
-            2: punctuation.separator.rgbds
-        - include: expressions
-        - include: line_ending
-        - match: ','
-          set:
-            - include: strings
-            - include: line_ending
-
-
-  include:
-    - match: '\b(include|INCLUDE)\b'
-      scope: keyword.control.import.rgbds
-      push:
-        - include: strings
-        - include: line_ending
-    - match: '\b(incbin|INCBIN)\b'
-      scope: keyword.control.import.rgbds
-      push:
-        - include: strings
-        - include: line_ending
-        - match: ','
-          scope: punctuation.separator.rgbds
-          set:
-            - include: expressions
-            - include: bad_line_ending
-            - match: ','
-              scope: punctuation.separator.rgbds
-              set:
-                - include: expressions
-                - include: line_ending
-
-
-  declaration:
-    - match: '^(\S+)\s+(equ|EQU|rb|RB|rw|RW|rl|RL)\b'
-      captures:
-        1: variable.other.constant.rgbds
-        2: keyword.declaration.variable.rgbds
-      push: operand
-    - match: '^(\S+)\s+(set|SET)\b'
-      captures:
-        1: variable.other.readwrite.rgbds
-        2: keyword.operator.assignment.rgbds
-      push: operand
-    - match: '^(\S+)\s+(=)'
-      captures:
-        1: variable.other.readwrite.rgbds
-        2: keyword.operator.assignment.rgbds
-      push: operand
-    - match: '^(\S+)\s+(equs|EQUS)\b'
-      captures:
-        1: variable.other.constant.rgbds
-        2: keyword.declaration.variable.rgbds
-      push:
-        - include: strings
-        - include: line_ending
-
-
-  macros:
-    - match: '^(\S+)\s*(:)\s*(macro|MACRO)\b'
-      captures:
-        1: entity.name.function.rgbds
-        2: keyword.label.rgbds
-        3: keyword.declaration.function.rgbds
-      push:
-        - match: '\b(endm|ENDM)\b'
-          scope: keyword.other.rgbds
-          pop: true
-        - meta_content_scope: meta.function.rgbds
-        - include: main
-
-
-  rept:
-    - match: '\b(rept|REPT)\b'
-      captures:
-        1: keyword.control.loop.for.rgbds
-      push:
-        - include: expressions
-        - match: '(?=\n)'
-          set:
-            - match: '\b(endr|ENDR)\b'
-              scope: keyword.control.loop.end.rgbds
-              pop: true
-            - meta_content_scope: meta.block.rgbds
-            - include: main
-
-  load:
-    - match: '\b(load|LOAD)\b'
-      captures:
-        1: keyword.other.rgbds
-      push:
-        - match: '(?=")'
-          push: section_name
-        - match: '(?=\n)'
-          set:
-            - match: '\b(endl|ENDL)\b'
-              scope: keyword.other.rgbds
-              pop: true
-            - meta_content_scope: meta.block.rgbds
-            - include: main
-
-
-  keywords:
-    - match: '\b(if|IF)\b'
-      scope: keyword.control.conditional.if.rgbds
-      push: operand
-    - match: '\b(elif|ELIF)\b'
-      scope: keyword.control.conditional.elseif.rgbds
-      push: operand
-    - match: '\b(else|ELSE)\b'
-      scope: keyword.control.conditional.else.rgbds
-      push: line_ending
-    - match: '\b(endc|ENDC)\b'
-      scope: keyword.control.conditional.end.rgbds
-      push: line_ending
-    - match: '\b(union|UNION|nextu|NEXTU)\b'
-      scope: keyword.declaration.union.rgbds
-      push: line_ending
-    - match: '\b(endu|ENDU)\b'
-      scope: keyword.other.rgbds
-      push: line_ending
-    - match: '\b(db|DB|dw|DW|dl|DL)\b'
-      scope: keyword.other.rgbds
-      push: operands
-    - match: '\b(ds|DS)\b'
-      scope: keyword.other.rgbds
-      push: two_operands
-    - match: '\b(pushs|PUSHS|pops|POPS|rsreset|RSRESET|export|EXPORT|purge|PURGE|newcharmap|NEWCHARMAP|setcharmap|SETCHARMAP|pushc|PUSHC|popc|POPC|pusho|PUSHO|popo|POPO)\b'
-      scope: keyword.other.rgbds
-      push: line_ending
-    - match: '\b(global|GLOBAL|xdef|XDEF)\b'
-      scope: invalid.deprecated.rgbds
-      push: line_ending
-    - match: '\b(rsset|RSSET|printv|PRINTV|printi|PRINTI|printf|PRINTF)\b'
-      scope: keyword.other.rgbds
-      push: operand
-    - match: '\b(printt|PRINTT)\b'
-      scope: keyword.other.rgbds
-      push:
-        - include: strings
-        - include: line_ending
-    - match: '\b(fail|FAIL|warn|WARN)\b'
-      scope: keyword.control.flow.throw.rgbds
-      push:
-        - include: strings
-        - include: line_ending
-    - match: '\b(shift|SHIFT)\b'
-      scope: keyword.other.rgbds
-      push: operand
-    - match: '\b(charmap|CHARMAP)\b'
-      scope: keyword.other.rgbds
-      push:
-        - include: strings
-        - match: ','
-          scope: punctuation.separator.mapping.key-value.rgbds
-          set:
-            - include: expressions
-            - include: line_ending
-
-
-  labels:
-    - match: '^\s*([^\s.]*\.[^\s:]+)(:{0,2})'
-      captures:
-        1: entity.name.local.rgbds
-        2: keyword.label.rgbds
-    - match: '^([^\s:]+)(::)'
-      captures:
-        1: entity.name.exported.rgbds
-        2: keyword.label.rgbds
-    - match: '^([^\s.:]+)(:)'
-      captures:
-        1: entity.name.internal.rgbds
-        2: keyword.label.rgbds
-    - match: '^([^\s.:]+)'
-      scope: invalid.deprecated.rgbds
-      captures:
-        1: entity.name.internal.rgbds
-
-
-  expressions:
-    - include: constants
-    - include: operators
-
-  strings:
-    - match: '"'
-      scope: punctuation.definition.string.begin.rgbds
-      push:
-        - meta_include_prototype: false
-        - meta_scope: string.quoted.double.rgbds
-        - include: string_escapes
-        - include: bracket_expansions
-        - match: '"'
-          scope: punctuation.definition.string.end.rgbds
-          pop: true
-        - include: bad_line_ending
-
-  string_escapes:
-    - include: macro_escapes
-    - match: '\\[\n]'
-      scope: punctuation.separator.continuation.rgbds
-    - match: '\\[\\"\x27,{}ntr]' # HACK: using a single quote breaks the YAML parser, using the escape sequence instead...
-      scope: constant.character.escape.rgbds
-    - match: '\\[^\\"\x27,{}ntr\n]'
-      scope: invalid.illegal.rgbds
-
-
-  symbols:
+  expect-symbol:
+    - include: symbol
+    - include: else-pop
+  symbol: # Duplicated in scope `num-symbol`, keep in sync
     - match: '@'
       scope: constant.language.rgbds
-    - match: '\b(_PI|_RS|__LINE__|__FILE__|__DATE__|__TIME__|__ISO_8601_LOCAL__|__ISO_8601_UTC__|__UTC_YEAR__|__UTC_MONTH__|__UTC_DAY__|__UTC_HOUR__|__UTC_MINUTE__|__UTC_SECOND__|__RGBDS_MAJOR__|__RGBDS_MINOR__|__RGBDS_PATCH__)\b'
+      pop: true
+    - match: '\b(?i:_PI|_RS|__LINE__|__FILE__|__DATE__|__TIME__|__ISO_8601_LOCAL__|__ISO_8601_UTC__|__UTC_YEAR__|__UTC_MONTH__|__UTC_DAY__|__UTC_HOUR__|__UTC_MINUTE__|__UTC_SECOND__|__RGBDS_MAJOR__|__RGBDS_MINOR__|__RGBDS_PATCH__)\b'
       scope: constant.language.rgbds
-    - match: '\b_NARG\b'
+      pop: true
+    - match: '\b(?i:_NARG)\b'
       scope: variable.parameter.rgbds
-
-  constants:
-    - include: functions
-    - include: symbols
-    - include: strings
-    - match: '\b-?[0-9]+\.[0-9]+\b'
-      scope: constant.float.rgbds
-    - match: '\$[0-9a-fA-F]+\b'
-      scope: constant.numeric.integer.hexadecimal.rgbds
-    - match: '&[0-7]+\b'
-      scope: constant.numeric.integer.octal.rgbds
-    - match: '%[01]+\b'
-      scope: constant.numeric.integer.binary.rgbds
-    - match: '\b[0-9]+\b'
-      scope: constant.numeric.integer.rgbds
-    - match: '`[0123]+\b'
-      scope: constant.numeric.integer.other.rgbds
-
-
-  functions:
-    - match: '\b(div|DIV|div|MUL|sin|SIN|cos|COS|tan|TAN|asin|ASIN|acos|ACOS|atan|ATAN|atan2|ATAN2|strlen|STRLEN|strcat|STRCAT|strcmp|STRCMP|strin|STRIN|strsub|STRSUB|strupr|STRUPR|strlwr|STRLWR|bank|BANK|def|DEF|high|HIGH|low|LOW)(\()'
+      pop: true
+    - match: '{{symbol_name}}'
+      scope: meta.generic-name.rgbds
+      pop: true
+    - match: '(?!{{reserved}}){{symbol_char}}*(\.){{symbol_name}}'
+      scope: meta.generic-name.local.rgbds
       captures:
-        1: variable.function.rgbds
-        2: punctuation.section.parens.begin.rgbds
-      push:
-        - include: expressions
-        - include: prototype # I have no idea why but the prototype isn't included here by default
-        - meta_scope: meta.function-call.rgbds
-        - match: '\)'
-          pop: true
-          scope: punctuation.section.parens.end.rgbds
-        - include: bad_line_ending
-
-
-  operators:
-    - match: '(==|!=|<=|>=|[-+*/%<>])'
-      scope: keyword.operator.arithmetic.rgbds
-    - match: '(~|<<|>>|&|\||\^)'
-      scope: keyword.operator.bitwise.rgbds
-    - match: '(&&|\|\||!)'
-      scope: keyword.operator.logical.rgbds
-    - match: '[\[\]]'
-      scope: punctuation.accessor.rgbds
-
-
-  instructions:
-    - include: no_arg_instrs
-    - include: one_arg_instrs
-    - include: two_arg_instrs
-    - include: cond_instrs
-
-  # Arguably, the scope to all of these should rather be `keyword`
-  # Thing is, this makes the entirety of the language red, which isn't practical no matter how to look at it
-  # I've decided to put the instructions under "variable.function.rgbds" to make them function calls
-  # If you stretch the definition enough, they call CPU functions, so it's not *wrong* per se
-  # That said, if you have a better idea that keeps readability, jump for it
-  no_arg_instrs:
-    - match: '\b(nop|rlca|rrca|rla|rra|daa|cpl|scf|ccf|halt|reti|di|ei)\b'
-      scope: variable.function.rgbds
-      push: line_ending
-
-  one_arg_instrs:
-    - match: '\b(inc|dec|pop|push|stop|rst|rlc|rrc|rl|rr|sla|sra|swap|srl)\b'
-      scope: variable.function.rgbds
-      push: operand
-
-  two_arg_instrs:
-    - match: '\b(ld|add|ldi|ldd|adc|sub|sbc|and|xor|or|cp|ldh|bit|res|set)\b'
-      scope: variable.function.rgbds
-      push: two_operands
-
-  cond_instrs:
-    - match: '\b(jr|ret|jp|call)\b(?:\s+(n?[cz])\b)?'
-      captures:
-        1: variable.function.rgbds
-        2: keyword.other.rgbds
-      push: operand
-
-  operand:
-    - include: registers
-    - include: expressions
-    - include: line_ending
-  two_operands:
-    - include: operand
-    - match: ','
-      scope: punctuation.separator.sequence.rgbds
-      set: operand
-  operands:
-    - include: operand
-    - match: ','
-      scope: punctuation.separator.sequence.rgbds
-    - include: line_ending
-
-  registers:
-    - match: '(?i)\b[bcdehlaf]\b'
-      scope: entity.name.tag.rgbds
-    - match: '(?i)\b(bc|de|hl|af|sp|hli|hld)\b'
-      scope: entity.name.tag.rgbds
-
-
-  macro_calls:
-    - match: '{{symbol_char}}+'
-      scope: variable.function.rgbds
-      push:
-        - meta_scope: meta.function-call.rgbds
-        - include: expressions
-        - include: registers
-        - include: line_ending
+        1: punctuation.accessor.dot.rgbds
+      pop: true

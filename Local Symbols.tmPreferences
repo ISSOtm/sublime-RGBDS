@@ -2,7 +2,7 @@
 <plist version="1.0">
 <dict>
     <key>scope</key>
-    <string>source.rgbds. entity.name.local</string>
+    <string>source.rgbds entity.name.local</string>
     <key>settings</key>
     <dict>
         <key>showInSymbolList</key>
