@@ -35,7 +35,6 @@ contexts:
   prototype:
     - include: comments
     - include: macro-args
-    # TODO: check if matching line continuations here makes them work magically
 
   # There is no need to separate most of these, but categorization helps, and then why
   # not just use the same one as RGBDS' grammar?
@@ -108,20 +107,17 @@ contexts:
     - match: '\b(?i:endm)\b'
       scope: keyword.declaration.end.macro.rgbds
       set: expect-eol # Implicit `pop` here!
-    - match: '\b(?i:shift)\b'
-      scope: keyword.operator.assignment.rgbds
-      push: expect-eol
     - include: main
 
   label:
     # Exported local lab1el
-    - match: '^\s*((?!{{reserved}}){{symbol_char}}*(\.){{symbol_name}})\s*(::)'
+    - match: '^\s*((?!{{reserved}}){{symbol_char}}*(\.){{symbol_char}}+)\s*(::)'
       captures:
         1: entity.name.local.exported.rgbds
         2: punctuation.accessor.dot.rgbds
         3: keyword.declaration.export.rgbds
     # Non-exported local label
-    - match: '^\s*((?!{{reserved}}){{symbol_char}}*(\.){{symbol_name}})\s*(:)?' # Local labels don't need a colon following their declaration
+    - match: '^\s*((?!{{reserved}}){{symbol_char}}*(\.){{symbol_char}}+)\s*(:)?' # Local labels don't need a colon following their declaration
       captures:
         1: entity.name.local.rgbds
         2: punctuation.accessor.dot.rgbds
@@ -186,11 +182,17 @@ contexts:
         - expect-eol
         - expect-ret-cond
     # Instructions accepting a single optional condition, then a single expression
-    - match: '\b(?i:call|jp|jr)\b'
+    - match: '\b(?i:call|jr)\b'
       scope: variable.function.instruction.rgbds
       push:
         - expect-eol
         - expect-jump-ops
+    # Like the above, but `jp hl` is a special case
+    - match: '\b(?i:jp)\b'
+      scope: variable.function.instruction.rgbds
+      push:
+        - expect-eol
+        - expect-jp-ops
     # Instructions optionally accepting register a, then either a single reg8 or a single expression
     - match: '\b(?i:adc|and|cp|or|sbc|sub|xor)\b'
       scope: variable.function.instruction.rgbds
@@ -241,7 +243,20 @@ contexts:
         - expect-comma
     - include: expect-num-expression
 
+  expect-jp-ops:
+    - match: '\b(?i:hl)\b'
+      scope: keyword.other.register.rgbds
+      set: expect-eol
+    # TODO: handle line continuation
+    - match: '(?=\S)|$' # else...
+      set: expect-jump-ops
+
   expect-add-ops:
+    - match: '\b(?i:sp)\b'
+      scope: keyword.other.register.rgbds
+      set:
+        - expect-num-expression
+        - expect-comma
     - match: '\b(?i:hl)\b'
       scope: keyword.other.register.rgbds
       set:
@@ -300,13 +315,13 @@ contexts:
     - match: '\[' # Target is a reg16, hld, hli, "$ff00+c", or an expression
       scope: punctuation.section.brackets.begin.rgbds
       set:
-        - match: '(?i:bc|de|hld|hli)'
+        - match: '\b(?i:bc\b|de\b|hld\b|hli\b|hl\+|hl-)'
           scope: keyword.other.register.rgbds
           set:
             - expect-a
             - expect-comma
             - expect-closing-bracket
-        - match: '(?i:(\$ff00)\s*(\+)\s*(c))'
+        - match: '(?i:(\$ff00)\s*(\+)\s*(c))\b'
           captures:
             1: constant.numeric.integer.decimal.rgbds
             2: keyword.operator.arithmetic.rgbds
@@ -352,7 +367,7 @@ contexts:
         6: punctuation.section.arguments.end.rgbds
       set: expect-ld-a-rhs
     # The following is basically a copy-paste of the reg8 rules, for matching reg8s
-    - match: '(?i:high)'
+    - match: '\b(?i:high)\b'
       scope: support.function.rgbds
       set:
         - expect-op8
@@ -361,7 +376,7 @@ contexts:
         - expect-arg-end
         - expect-reg16
         - expect-arg-begin
-    - match: '(?i:low)'
+    - match: '\b(?i:low)\b'
       scope: support.function.rgbds
       set:
         - expect-op8
@@ -370,7 +385,7 @@ contexts:
         - expect-arg-end
         - expect-low-reg16
         - expect-arg-begin
-    - match: '(?i:[bcdehl])'
+    - match: '\b(?i:[bcdehl])\b'
       scope: keyword.other.register.rgbds
       set:
         - expect-op8
@@ -384,10 +399,10 @@ contexts:
         - match: '\['
           scope: punctuation.section.braces.begin.rgbds
           set:
-            - match: '(?i:bc|de|hld|hli|hl)'
+            - match: '\b(?i:bc\b|de\b|hld\b|hli\b|hl\+|hl-|hl\b)'
               scope: keyword.other.register.rgbds
               set: expect-closing-bracket
-            - match: '(?i:(\$ff00)\s*(\+)\s*(c))'
+            - match: '(?i:(\$ff00)\s*(\+)\s*(c))\b'
               captures:
                 1: constant.numeric.integer.decimal.rgbds
                 2: keyword.operator.arithmetic.rgbds
@@ -542,8 +557,7 @@ contexts:
         - meta_scope: meta.function-call.macro.rgbds
         - match: ','
           scope: punctuation.separator.arguments.rgbds
-        - match: $
-          pop: true
+        - include: eol-pop
 
 
 
@@ -595,7 +609,7 @@ contexts:
         - expect-section-type-org
         - expect-comma
         - expect-string
-        - expect-section-union
+        - expect-section-modifier
     - match: '\b(?i:rsreset)\b'
       scope: keyword.other.rgbds
       push: expect-eol
@@ -609,6 +623,9 @@ contexts:
       push:
         - union-body
         - expect-eol
+    - match: '\b(?i:nextu)\b'
+      scope: keyword.context.block.nextu.rgbds
+      push: expect-eol
     - match: '\b(?i:incbin)\b'
       scope: keyword.control.import.bin.rgbds
       push:
@@ -652,6 +669,11 @@ contexts:
         - rept-body
         - expect-eol
         - expect-num-expression
+    - match: '\b(?i:shift)\b'
+      scope: keyword.operator.assignment.rgbds
+      push:
+        - expect-eol
+        - expect-num-expression # Actually optional
     - match: '\b(?i:fail|warn)\b'
       scope: keyword.control.exception.raise.rgbds
       push:
@@ -732,13 +754,17 @@ contexts:
       set: expect-num-expression
     - include: else-pop
 
-  expect-section-union:
+  expect-section-modifier:
     - match: '\b(?i:union)\b'
       scope: storage.modifier.section-union.rgbds
+      pop: true
+    - match: '\b(?i:fragment)\b'
+      scope: storage.modifier.section-fragment.rgbds
       pop: true
     - include: else-pop
 
   expect-section-type-org:
+    - meta_content_scope: meta.annotation.parameters.section-type.rgbds
     - match: '\b(?i:rom0|romx|vram|sram|wram0|wramx|oam|hram)\b'
       scope: storage.type.section.rgbds
       set:
@@ -753,16 +779,19 @@ contexts:
   expect-section-attrs:
     - match: ','
       scope: punctuation.separator.sequence.rgbds
-      set:
+      set: # Not `push`ing because `else-pop` behaves differently then
+        - meta_content_scope: meta.annotation.parameters.section-attrs.rgbds
         - match: '\b(?i:bank)\b'
           scope: storage.modifier.rgbds
           set:
+            - expect-section-attrs
             - expect-closing-bracket
             - expect-num-expression
             - expect-opening-bracket
         - match: '\b(?i:align)\b'
           scope: storage.modifier.rgbds
           set:
+            - expect-section-attrs
             - expect-closing-bracket
             - expect-optional-expression
             - expect-num-expression
@@ -772,9 +801,6 @@ contexts:
 
   union-body:
     - meta_content_scope: meta.block.union.rgbds
-    - match: '\b(?i:nextu)\b'
-      scope: keyword.context.block.nextu.rgbds
-      push: expect-eol
     - match: '\b(?i:endu)\b'
       scope: keyword.context.block.end.union.rgbds
       set: expect-eol # Implicit `pop` here!
@@ -796,7 +822,7 @@ contexts:
   expect-assert-type:
     - match: '\b(?i:warn|fail|fatal)\b'
       scope: storage.modifier.assertion.rgbds
-      pop: true
+      set: expect-comma
     - include: else-pop
 
 
@@ -809,21 +835,31 @@ contexts:
     - match: ''
       pop: true
 
+  # Pops the context it's included in on EOL... but not line continuations!
+  eol-pop:
+    - match: '(\\)\s*\n'
+      captures:
+        1: punctuation.separator.continuation.line.rgbds
+    - match: '(\\)\s*$' # No line continuations at EOF!
+      captures:
+        1: invalid.illegal.rgbds
+      pop: true
+    - match: '$\n?' # Nothing strides lines in RGBDS... except line continuations, whoops.
+      pop: true
+
   # Useful as a fallback, that highlighting can try to keep progressing.
   # Usage: `- include: else-pop` at the END of the scope this should be applied in.
   else-pop:
-    - match: '$' # Nothing strides lines in RGBDS... except line continuations, whoops.
-      pop: true
+    - include: eol-pop
+    - match: '\s' # Consume whitespace
     - match: '(?=\S)'
       pop: true
 
   expect-eol:
-    - match: '$'
-      pop: true
+    - include: eol-pop
     - match: '(?=\S)'
       set:
-        - match: '$'
-          pop: true
+        - include: eol-pop
         - match: '.' # Matching one character at a time is important, so prototype can still match
           scope: invalid.illegal.rgbds
 
@@ -856,20 +892,21 @@ contexts:
     - include: else-pop
   num-expression:
     # https://rednex.github.io/rgbds/rgbasm.5.html#Numeric_Formats
-    - match: '[0-9]+(\.)[0-9]+'
+    - match: '[0-9]+(\.)[0-9]+\b'
       scope: constant.numeric.float.decimal.rgbds
       captures:
         1: punctuation.separator.decimal.rgbds
-    - match: '\$[0-9a-fA-F]+'
+    - match: '\$[0-9a-fA-F]+\b'
       scope: constant.numeric.integer.hexadecimal.rgbds
-    - match: '[0-9]+'
+    - match: '[0-9]+\b'
       scope: constant.numeric.integer.decimal.rgbds
-    - match: '&[0-7]+'
+    - match: '&[0-7]+\b'
       scope: constant.numeric.integer.octal.rgbds
-    - match: '%[01]+'
+    - match: '%[01]+\b'
       scope: constant.numeric.integer.binary.rgbds
-    - include: string
-    - match: '`[0123]+'
+    - match: '(?i:(?="|strupr|strlwr|strcat|strsub))'
+      push: string
+    - match: '`[0123]+\b'
       scope: constant.numeric.integer.other.rgbds
     # Duplicated at scope `symbol`, keep in sync
     - match: '@'
@@ -880,7 +917,7 @@ contexts:
       scope: variable.parameter.rgbds
     - match: '{{symbol_name}}'
       scope: meta.generic-name.rgbds
-    - match: '(?!{{reserved}}){{symbol_char}}*(\.){{symbol_name}}'
+    - match: '(?!{{reserved}}){{symbol_char}}*(\.){{symbol_char}}+'
       scope: meta.generic-name.local.rgbds
       captures:
         1: punctuation.accessor.dot.rgbds
@@ -963,8 +1000,7 @@ contexts:
         - expect-num-expression
         - expect-arg-begin
     # Expressions don't stride lines
-    - match: $
-      pop: true
+    - include: eol-pop
     # These usually signify an expression is finished
     - match: '(?=[\),])'
       pop: true
@@ -993,6 +1029,7 @@ contexts:
         - match: '"'
           scope: punctuation.definition.string.end.rgbds
           pop: true
+        # TODO: handle line continuations? How does RGBDS handle it?
         - match: '$\n?'
           scope: invalid.illegal.rgbds
           pop: true

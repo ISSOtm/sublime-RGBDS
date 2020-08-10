@@ -1,0 +1,8 @@
+<snippet>
+    <scope>source.rgbds</scope>
+    <tabTrigger>section</tabTrigger>
+    <content><![CDATA[
+section fragment "${1:name}", ${0:attributes}
+]]></content>
+    <description>section fragment "…", …</description>
+</snippet>

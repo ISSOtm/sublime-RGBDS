@@ -1,0 +1,21 @@
+Sublime-RGBDS 2.0.0 changelog:
+
+Fully rewrote syntax, using better techniques:
+
+ - Rewritten using RGBASM's own syntax definition, should be more accurate
+
+ - Syntax should be more lenient and recover from syntax errors better; please however note that RGBASM syntax is impossible to highlight correctly in some cases, so minor blunders are to be expected
+
+ - Macro invocations are now kept track of, and considered as functions
+
+ - Some indentation rules have been fixed, such as `ELSE` not de-denting when typed
+
+ - Added syntax tests on my end to catch future regressions
+
+Given the size of the changes, please let me know ("Issues" link on https://packagecontrol.io/packages/RGBDS) if this update broke your workflow somehow, or if there are glaring syntax errors.
+
+Known bugs:
+
+ - Section types and attributes are not auto-completed anymore, I can't figure out how to trigger them
+
+ - Line continuation support was attempted, but doesn't work for a reason I don't understand

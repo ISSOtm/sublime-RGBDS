@@ -283,3 +283,22 @@ ccf ccf
 
 export syma, symb, symc symd
 ;                       ^^^^ invalid.illegal.rgbds
+
+
+mackey: macro
+
+; <- meta.block.macro.rgbds
+    shift 64
+;   ^^^^^ keyword.operator.assignment.rgbds
+;         ^^ constant.numeric.integer.decimal.rgbds
+
+    shift "strings shouldn't end expressions" + 1
+;                                             ^ keyword.operator.arithmetic.rgbds
+;                                               ^ constant.numeric.integer.decimal.rgbds
+
+    if 0
+        shift
+; <- meta.block.macro.rgbds meta.block.if.rgbds
+;       ^^^^^keyword.operator.assignment.rgbds
+    endc
+endm

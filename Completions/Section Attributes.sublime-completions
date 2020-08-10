@@ -1,5 +1,5 @@
 {
-    "scope": "meta.annotation.section.attribute.rgbds",
+    "scope": "meta.annotation.parameters.section-attrs.rgbds",
     "completions": [
         {"trigger": "align\talign[…]", "contents": "align[$1]"},
         {"trigger": "ALIGN\tALIGN[…]", "contents": "ALIGN[$1]"},

@@ -6,9 +6,9 @@
     <key>settings</key>
     <dict>
         <key>increaseIndentPattern</key>
-        <string>^([^\s])?\s*\b(if|IF|elif|ELIF|else|ELSE|rept|REPT|macro|MACRO|union|UNION|nextu|NEXTU)\b</string>
+        <string>^\s*(?i:if|elif|else|rept|macro|union|nextu)\b</string>
         <key>decreaseIndentPattern</key>
-        <string>^([^\s])?\s*(endc|ENDC|endr|ENDR|endm|ENDM|endu|ENDU|union|UNION|nextu|NEXTU)\b</string>
+        <string>^\s*(?i:elif|else|endc|endr|endm|endu|union|nextu)\b</string>
     </dict>
 </dict>
 </plist>
