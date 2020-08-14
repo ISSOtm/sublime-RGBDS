@@ -302,3 +302,9 @@ mackey: macro
 ;       ^^^^^keyword.operator.assignment.rgbds
     endc
 endm
+
+c#4 equ 0
+; <- entity.name.constant.rgbds
+;^^ entity.name.constant.rgbds
+;   ^^^ keyword.operator.assignment.rgbds keyword.operator.word.rgbds
+;       ^ constant.numeric.integer.decimal.rgbds

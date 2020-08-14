@@ -22,9 +22,9 @@ variables:
       if|else|elif|endc| # Conditionals
       wram0|vram|romx|rom0|hram|wramx|sram|oam| # Section types
       rb|rw|equ|equs # Variable definitions (`set` is in the instruction list)
-    )\b)
+    )(?!{{symbol_char}}))
 
-  symbol_name: '(?:\b(?!{{reserved}}){{symbol_char}}+\b)'
+  symbol_name: '(?:(?!{{reserved}}){{symbol_char}}+(?!{{symbol_char}}))'
 
   condition: '(?:\b(?i:n?[cz])\b)'
 
