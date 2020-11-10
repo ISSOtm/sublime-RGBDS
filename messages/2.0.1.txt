@@ -1,0 +1,7 @@
+Sublime-RGBDS 2.0.1 changelog:
+
+ - Fixed '#' not being accepted in symbol names
+
+ - Fixed some instruction forms not being recognized with spaces
+
+ - Fix section attributes not being recognized on `LOAD`
