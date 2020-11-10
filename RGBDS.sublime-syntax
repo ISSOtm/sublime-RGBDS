@@ -336,7 +336,7 @@ contexts:
             - expect-op8
             - expect-comma
             - expect-closing-bracket
-        - match: '' # "default" if none of the above apply
+        - match: '(?=\S)' # "default" if none of the above apply
           set:
             - expect-a-sp
             - expect-comma
@@ -408,7 +408,7 @@ contexts:
                 2: keyword.operator.arithmetic.rgbds
                 3: keyword.other.register.rgbds
               set: expect-closing-bracket
-            - match: ''
+            - match: '(?=\S)'
               set:
                 - expect-closing-bracket
                 - expect-num-expression
@@ -485,7 +485,7 @@ contexts:
         # This is the simplest to match, so we'll take it
         - match: '(?=(?i:low|high)\s*\(\s*(?i:bc|de|hl|af)\s*\))'
           set: expect-reg8
-        - match: '' # Basically a `else`
+        - match: '(?=\S)' # Basically a `else`
           set: expect-num-expression
     - include: reg8
     - include: expect-num-expression
@@ -545,7 +545,7 @@ contexts:
     - match: '\b(?i:sp)\b'
       scope: keyword.other.register.rgbds
       set: expect-num-expression
-    - match: '' # "default" if none of the above apply
+    - match: '(?=\S)' # "default" if none of the above apply
       set: expect-num-expression
 
 
