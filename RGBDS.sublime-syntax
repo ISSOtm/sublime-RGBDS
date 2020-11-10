@@ -655,9 +655,10 @@ contexts:
       push: expect-eol
     - match: '\b(?i:load)\b'
       scope: keyword.context.block.load.rgbds
+      push:
         - expect-eol
         - expect-section-attrs
-        - expect-section-type
+        - expect-section-type-org
         - expect-comma
         - expect-string
     - match: '\b(?i:endl)\b'

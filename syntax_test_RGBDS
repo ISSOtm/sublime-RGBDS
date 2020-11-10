@@ -308,3 +308,28 @@ c#4 equ 0
 ;^^ entity.name.constant.rgbds
 ;   ^^^ keyword.operator.assignment.rgbds keyword.operator.word.rgbds
 ;       ^ constant.numeric.integer.decimal.rgbds
+
+LOAD "Section name", ROMX[$DABE],BANK[42],ALIGN[8]
+; <- keyword.context.block.load.rgbds
+;^^^ keyword.context.block.load.rgbds
+;    ^ punctuation.definition.string.begin.rgbds
+;    ^^^^^^^^^^^^^^ meta.annotation.parameters.section-type.rgbds meta.string.rgbds string.quoted.double.rgbds
+;                 ^ punctuation.definition.string.end.rgbds
+;                  ^ meta.annotation.parameters.section-type.rgbds punctuation.separator.arguments.rgbds
+;                    ^^^^ meta.annotation.parameters.section-type.rgbds storage.type.section.rgbds
+;                        ^ punctuation.section.brackets.begin.rgbds
+;                         ^^^^^ constant.numeric.integer.hexadecimal.rgbds
+;                              ^ punctuation.section.brackets.end.rgbds
+;                               ^ punctuation.separator.sequence.rgbds
+;                                ^^^^ meta.annotation.parameters.section-attrs.rgbds storage.modifier.rgbds
+;                                    ^ punctuation.section.brackets.begin.rgbds
+;                                     ^^ constant.numeric.integer.decimal.rgbds
+;                                       ^ punctuation.section.brackets.end.rgbds
+;                                        ^ punctuation.separator.sequence.rgbds
+;                                         ^^^^^ meta.annotation.parameters.section-attrs.rgbds storage.modifier.rgbds
+;                                              ^ punctuation.section.brackets.begin.rgbds
+;                                               ^ constant.numeric.integer.decimal.rgbds
+;                                                ^ punctuation.section.brackets.end.rgbds
+ENDL
+; <- keyword.context.block.load.end.rgbds
+;^^^ keyword.context.block.load.end.rgbds
