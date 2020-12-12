@@ -8,6 +8,7 @@ file_extensions:
   - rgbasm
   - inc
 scope: source.rgbds
+version: 2
 
 variables:
   symbol_char: '[a-zA-Z0-9_\\@#]'
@@ -52,6 +53,13 @@ contexts:
       push:
         - meta_scope: comment.line.semi-colon.rgbds
         - match: '$\n?' # Consume the newline so that completions aren't shown at the end of the line when typing comments
+          pop: true
+    - match: '/\*'
+      scope: punctuation.definition.comment.begin.rgbds
+      push:
+        - meta_scope: comment.block.rgbds
+        - match: '\*/'
+          scope: punctuation.definition.comment.end.rgbds
           pop: true
     - match: '^\*'
       scope: punctuation.definition.comment.begin.rgbds
@@ -107,6 +115,9 @@ contexts:
     - match: '\b(?i:endm)\b'
       scope: keyword.declaration.end.macro.rgbds
       set: expect-eol # Implicit `pop` here!
+    # Nested plain macro definitions are illegal
+    - match: '^{{symbol_name}}\s*:\s*(?i:macro)\b'
+      scope: invalid.illegal.rgbds
     - include: main
 
   label:
@@ -555,6 +566,7 @@ contexts:
       scope: variable.function.rgbds
       push:
         - meta_scope: meta.function-call.macro.rgbds
+        - match: '\\,' # Escaped commas do not separate macro args
         - match: ','
           scope: punctuation.separator.arguments.rgbds
         - include: eol-pop

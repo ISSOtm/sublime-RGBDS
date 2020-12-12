@@ -333,3 +333,24 @@ LOAD "Section name", ROMX[$DABE],BANK[42],ALIGN[8]
 ENDL
 ; <- keyword.context.block.load.end.rgbds
 ;^^^ keyword.context.block.load.end.rgbds
+
+/* comment
+on several lines
+*/ even!
+; <- comment.block.rgbds punctuation.definition.comment.end.rgbds
+;^ comment.block.rgbds punctuation.definition.comment.end.rgbds
+; ^^^^^^^ - comment
+
+/* comment
+;*/ but not this
+; <- comment.block.rgbds
+;^^ comment.block.rgbds punctuation.definition.comment.end.rgbds
+;  ^^^^^^^^^^^^^^ - comment
+
+label: macro
+inner: macro
+; <- invalid.illegal.rgbds
+;^^^^^^^^^^^ invalid.illegal.rgbds
+endm
+
+; <- - meta.block.macro.rgbds

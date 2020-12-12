@@ -1,0 +1,5 @@
+Sublime-RGBDS 2.0.2 changelog:
+
+ - Upgraded to RGBASM 0.4.2's syntax changes
+
+ - Fixed escaping commas in macro calls
