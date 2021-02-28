@@ -1,0 +1,36 @@
+%YAML 1.2
+---
+# See http://www.sublimetext.com/docs/3/syntax.html
+file_extensions:
+  - sym
+scope: source.rgbds-sym
+
+contexts:
+  # The prototype context is prepended to all contexts but those setting
+  # meta_include_prototype: false.
+  prototype:
+    - match: ';'
+      scope: punctuation.definition.comment.begin.rgbds-sym
+      push:
+        # This is an anonymous context push for brevity.
+        - meta_scope: comment.line.semi-colon.rgbds-sym
+        - match: $
+          pop: true
+
+  main:
+    - match: '^\s*(?:([0-9A-Fa-f]+)|(BOOT)):([0-9A-Fa-f]+)\b'
+      captures:
+        1: constant.numeric.integer.hexadecimal.bank.rgbds-sym
+        2: keyword.other.boot-bank.rgbds-sym
+        3: constant.numeric.integer.hexadecimal.addr.rgbds-sym
+      push: sym-name
+    - match: \S+
+      scope: invalid.illegal.rgbds-sym
+
+  sym-name:
+    - match: \s
+    - match: '[^ \t;]+'
+      scope: entity.name.symbol.rgbds-sym
+      pop: true
+    - match: $\n?
+      pop: true
