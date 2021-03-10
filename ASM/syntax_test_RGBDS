@@ -12,13 +12,6 @@
 ; Some comment; but not nested
 ;             ^ - punctuation.definition.comment.begin.rgbds
 
-* Albeit deprecated, this is a type of comment
-; <- comment.line.asterisk.rgbds punctuation.definition.comment.begin.rgbds
-;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ comment.line.asterisk.rgbds
-
-    * This is however not a comment
-;   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ - comment
-
 Local.AndExported::
 ; <- entity.name.local.exported.rgbds
 ;^^^^^^^^^^^^^^^^ entity.name.local.exported.rgbds
@@ -87,8 +80,8 @@ Internal:
 ;       ^ keyword.declaration.rgbds
 
 Deprecated
-; <- entity.name.internal.rgbds invalid.deprecated.rgbds
-;^^^^^^^^^ entity.name.internal.rgbds invalid.deprecated.rgbds
+; <- invalid.illegal.rgbds
+;^^^^^^^^^ invalid.illegal.rgbds
 
 
 ; Testing that consecutive label declarations work, even when separated by a comment...
@@ -209,7 +202,7 @@ str_cat equs strCAT("one ", "two")
 ;                   ^^^^^^ meta.string.rgbds string.quoted.double.rgbds
 ;                   ^ punctuation.definition.string.begin.rgbds
 ;                        ^ punctuation.definition.string.end.rgbds
-;                         ^ punctuation.separator.arguments.rgbds
+;                         ^ punctuation.separator.sequence.rgbds
 ;                           ^^^^^ meta.string.rgbds string.quoted.double.rgbds
 ;                           ^ punctuation.definition.string.begin.rgbds
 ;                               ^ punctuation.definition.string.end.rgbds
@@ -309,7 +302,7 @@ c#4 equ 0
 ;   ^^^ keyword.operator.assignment.rgbds keyword.operator.word.rgbds
 ;       ^ constant.numeric.integer.decimal.rgbds
 
-LOAD "Section name", ROMX[$DABE],BANK[42],ALIGN[8]
+LOAD "Section name", HRAM[$DABE],BANK[42],ALIGN[8]
 ; <- keyword.context.block.load.rgbds
 ;^^^ keyword.context.block.load.rgbds
 ;    ^ punctuation.definition.string.begin.rgbds
@@ -354,3 +347,112 @@ inner: macro
 endm
 
 ; <- - meta.block.macro.rgbds
+
+macro label
+; <- meta.block.macro.rgbds meta.function.rgbds keyword.declaration.macro.rgbds
+;^^^^ meta.block.macro.rgbds meta.function.rgbds keyword.declaration.macro.rgbds
+;     ^^^^^ meta.block.macro.rgbds meta.function.rgbds entity.name.macro.rgbds
+endm
+
+
+PRINT "hi", $BABE
+; <- keyword.other.rgbds
+;^^^^ keyword.other.rgbds
+;     ^^^^ meta.string.rgbds string.quoted.double.rgbds
+;     ^ punctuation.definition.string.begin.rgbds
+;        ^ punctuation.definition.string.end.rgbds
+;         ^ punctuation.separator.sequence.rgbds
+;           ^^^^^ constant.numeric.integer.hexadecimal.rgbds
+    PRINTLN 0, 1, "two", 3
+;   ^^^^^^^ keyword.other.rgbds
+;           ^ constant.numeric.integer.decimal.rgbds
+;            ^ punctuation.separator.sequence.rgbds
+;              ^ constant.numeric.integer.decimal.rgbds
+;               ^ punctuation.separator.sequence.rgbds
+;                 ^^^^^ meta.string.rgbds string.quoted.double.rgbds
+;                 ^ punctuation.definition.string.begin.rgbds
+;                     ^ punctuation.definition.string.end.rgbds
+;                      ^ punctuation.separator.sequence.rgbds
+;                        ^ constant.numeric.integer.decimal.rgbds
+
+
+    PRINTLN STRCAT("a", "b", "c")
+;           ^^^^^^^^^^^^^^^^^^^^^ meta.function-call.rgbds
+;           ^^^^^^ support.function.string.rgbds
+;                 ^ punctuation.section.arguments.begin.rgbds
+;                  ^^^ meta.string.rgbds string.quoted.double.rgbds
+;                  ^ punctuation.definition.string.begin.rgbds
+;                    ^ punctuation.definition.string.end.rgbds
+;                     ^ punctuation.separator.sequence.rgbds
+;                       ^^^ meta.string.rgbds string.quoted.double.rgbds
+;                       ^ punctuation.definition.string.begin.rgbds
+;                         ^ punctuation.definition.string.end.rgbds
+;                          ^ punctuation.separator.sequence.rgbds
+;                            ^^^ meta.string.rgbds string.quoted.double.rgbds
+;                            ^ punctuation.definition.string.begin.rgbds
+;                              ^ punctuation.definition.string.end.rgbds
+;                               ^ punctuation.section.arguments.end.rgbds
+
+    PRINT STRFMT("How about some", $BEEF, "today?", 0)
+;         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ meta.function-call.rgbds
+;         ^^^^^^ meta.function-call.rgbds support.function.string.rgbds
+;               ^ punctuation.section.arguments.begin.rgbds
+;                ^^^^^^^^^^^^^^^^ meta.string.rgbds string.quoted.double.rgbds
+;                ^ punctuation.definition.string.begin.rgbds
+;                               ^ punctuation.definition.string.end.rgbds
+;                                ^ punctuation.separator.sequence.rgbds
+;                                  ^^^^^ constant.numeric.integer.hexadecimal.rgbds
+;                                       ^ punctuation.separator.sequence.rgbds
+;                                         ^^^^^^^^ meta.string.rgbds string.quoted.double.rgbds
+;                                         ^ punctuation.definition.string.begin.rgbds
+;                                                ^ punctuation.definition.string.end.rgbds
+;                                                 ^ punctuation.separator.sequence.rgbds
+;                                                   ^ constant.numeric.integer.decimal.rgbds
+;                                                    ^ punctuation.section.arguments.end.rgbds
+
+    PRINT """Hi
+;         ^^^^^^ meta.string.rgbds string.quoted.triple.rgbds
+;         ^^^ punctuation.definition.string.begin.rgbds
+    guys! \#
+; <- meta.string.rgbds string.quoted.triple.rgbds
+;^^^^^^^^^^^^ meta.string.rgbds string.quoted.triple.rgbds
+;         ^^ variable.parameter.rgbds
+"""
+; <- meta.string.rgbds string.quoted.triple.rgbds punctuation.definition.string.end.rgbds
+;^^ meta.string.rgbds string.quoted.triple.rgbds punctuation.definition.string.end.rgbds
+
+    break
+;   ^^^^^ keyword.control.flow.break.rgbds
+
+
+redef saucisse equs "sausage"
+; <- keyword.declaration.redef.rgbds
+;^^^^ keyword.declaration.redef.rgbds
+;     ^^^^^^^^ entity.name.constant.rgbds
+;              ^^^^ keyword.operator.assignment.rgbds keyword.operator.word.rgbds
+;                   ^^^^^^^^^ meta.string.rgbds string.quoted.double.rgbds
+;                   ^ punctuation.definition.string.begin.rgbds
+;                           ^ punctuation.definition.string.end.rgbds
+
+load union "...", romX
+; <- keyword.context.block.load.rgbds
+;^^^ keyword.context.block.load.rgbds
+;    ^^^^^ meta.annotation.parameters.section-type.rgbds storage.modifier.section-union.rgbds
+;          ^^^^^ meta.annotation.parameters.section-type.rgbds meta.string.rgbds string.quoted.double.rgbds
+;          ^ punctuation.definition.string.begin.rgbds
+;              ^ punctuation.definition.string.end.rgbds
+;               ^ meta.annotation.parameters.section-type.rgbds punctuation.separator.arguments.rgbds
+;                 ^^^^ invalid.illegal.rgbds
+
+    ds 1, 2, 3,
+;   ^^ keyword.other.data.rgbds
+;      ^ constant.numeric.integer.decimal.rgbds
+;       ^ punctuation.separator.sequence.rgbds
+;         ^ constant.numeric.integer.decimal.rgbds
+;          ^ punctuation.separator.sequence.rgbds
+;            ^ constant.numeric.integer.decimal.rgbds
+;             ^ punctuation.separator.sequence.rgbds
+
+
+/* \1 */
+;  ^^ - variable.parameter.rgbds
