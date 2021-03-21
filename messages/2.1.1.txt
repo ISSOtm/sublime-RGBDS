@@ -1,0 +1,3 @@
+Sublime-RGBDS 2.1.1 changelog:
+
+ - Fixed `global.local` labels not being properly recognized in expressions
