@@ -1003,12 +1003,12 @@ contexts:
       scope: constant.language.rgbds
     - match: '\b(?i:_NARG)\b'
       scope: variable.parameter.rgbds
-    - match: '{{symbol_name}}'
-      scope: meta.generic-name.rgbds
     - match: '(?!{{reserved}}){{symbol_char}}*(\.){{symbol_char}}+'
       scope: meta.generic-name.local.rgbds
       captures:
         1: punctuation.accessor.dot.rgbds
+    - match: '{{symbol_name}}'
+      scope: meta.generic-name.rgbds
     - match: '\('
       scope: punctuation.section.parens.begin.rgbds
       push:

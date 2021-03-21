@@ -456,3 +456,16 @@ load union "...", romX
 
 /* \1 */
 ;  ^^ - variable.parameter.rgbds
+
+
+    ld a, SomeLabel.localPart
+;   ^^ variable.function.instruction.rgbds
+;      ^ keyword.other.register.rgbds
+;       ^ punctuation.separator.arguments.rgbds
+;         ^^^^^^^^^^^^^^^^^^^ meta.generic-name.local.rgbds
+
+    ld a, SomeLabel
+;   ^^ variable.function.instruction.rgbds
+;      ^ keyword.other.register.rgbds
+;       ^ punctuation.separator.arguments.rgbds
+;         ^^^^^^^^^ meta.generic-name.rgbds
