@@ -469,3 +469,20 @@ load union "...", romX
 ;      ^ keyword.other.register.rgbds
 ;       ^ punctuation.separator.arguments.rgbds
 ;         ^^^^^^^^^ meta.generic-name.rgbds
+
+    ld a, :++
+;   ^^ variable.function.instruction.rgbds
+;      ^ keyword.other.register.rgbds
+;       ^ punctuation.separator.arguments.rgbds
+;         ^^^ meta.anon-label-ref.rgbds
+    ld a, :-
+;   ^^ variable.function.instruction.rgbds
+;      ^ keyword.other.register.rgbds
+;       ^ punctuation.separator.arguments.rgbds
+;         ^^ meta.anon-label-ref.rgbds
+
+    ld a, :
+;   ^^ variable.function.instruction.rgbds
+;      ^ keyword.other.register.rgbds
+;       ^ punctuation.separator.arguments.rgbds
+;         ^ invalid.illegal.rgbds
