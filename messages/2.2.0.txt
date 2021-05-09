@@ -1,0 +1,3 @@
+Sublime-RGBDS 2.2.0 changelog:
+
+ - Synced with RGBDS 0.5.1's changes
