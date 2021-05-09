@@ -17,8 +17,8 @@ variables:
       adc|add|and|bit|call|ccf|cpl|cp|daa|dec|di|ei|halt|inc|jp|jr|ld|ldi|ldd|ldio|ldh|nop|or|pop|push|res|reti|ret|rlca|rlc|rla|rl|rrc|rrca|rra|rr|rst|sbc|scf|set|sla|sra|srl|stop|sub|swap|xor| # Instructions
       nz|z|nc| # Conditions (`c` is in the register list)
       af|bc|de|hl|sp|a|b|c|d|e|h|l| # Registers
-      def|bank|align|round|ceil|floor|div|mul|sin|cos|tan|asin|acos|atan|atan2|pow|log|high|low|isconst|strcmp|strin|strsub|strlen|strcat|strupr|strlwr|strrin|strrpl|strfmt| # Functions
-      include|print||println|printt|printi|printv|printf|export|ds|db|dw|dl|section|purge|rsreset|rsset|incbin|charmap|newcharmap|setcharmap|fail|warn|fatal|assert|static_assert|shift|opt|break| # Pseudo-ops
+      def|bank|align|round|ceil|floor|div|mul|sin|cos|tan|asin|acos|atan|atan2|pow|log|high|low|isconst|sizeof|startof|strcmp|strin|strsub|strlen|strcat|strupr|strlwr|strrin|strrpl|strfmt| # Functions
+      include|print|println|printt|printi|printv|printf|export|ds|db|dw|dl|section|purge|rsreset|rsset|incbin|charmap|newcharmap|setcharmap|fail|warn|fatal|assert|static_assert|shift|opt|break| # Pseudo-ops
       macro|endm|rept|for|endr|load|endl|pushc|popc|union|nextu|endu|pushs|pops|pusho|popo| # Block delimiters
       if|else|elif|endc| # Conditionals
       wram0|vram|romx|rom0|hram|wramx|sram|oam| # Section types
@@ -71,6 +71,19 @@ contexts:
       scope: variable.parameter.unique.rgbds
     - match: '\\#'
       scope: variable.parameter.all.rgbds
+    - match: '\\<[0-9]+>'
+      scope: variable.parameter.rgbds
+    # Otherwise, it must be followed by a symbol name
+    - match: '\\<'
+      push:
+        - expect-closing-angle
+        - expect-symbol
+
+  expect-closing-angle:
+    - meta_scope: variable.parameter.rgbds
+    - match: '>'
+      pop: true
+    - include: else-pop
 
 
 
@@ -90,6 +103,23 @@ contexts:
       push:
         - expect-eol
         - expect-string
+    - match: '^\s*((?i:def))\s*({{symbol_name}})\s+((?i:equ|rb|rw|rl))'
+      captures:
+        1: keyword.declaration.def.rgbds
+        2: entity.name.constant.rgbds
+        3: keyword.operator.assignment.rgbds keyword.operator.word.rgbds
+      push:
+        - expect-eol
+        - expect-num-expression
+    - match: '^\s*((?i:def))\s*({{symbol_name}})\s+((?i:(set))|=)'
+      captures:
+        1: keyword.declaration.def.rgbds
+        2: entity.name.rgbds
+        3: keyword.operator.assignment.rgbds
+        4: keyword.operator.word.rgbds
+      push:
+        - expect-eol
+        - expect-num-expression
     - match: '^({{symbol_name}})\s+((?i:equ|rb|rw|rl))'
       captures:
         1: entity.name.constant.rgbds
@@ -352,11 +382,13 @@ contexts:
             - expect-a
             - expect-comma
             - expect-closing-bracket
-        - match: '(?i:(\$ff00)\s*(\+)\s*(c))\b'
+        # FIXME: actually, any expression equal to 65536 works, but oh god
+        - match: '(?i:(?:(\$ff00)|(65536))\s*(\+)\s*(c))\b'
           captures:
-            1: constant.numeric.integer.decimal.rgbds
-            2: keyword.operator.arithmetic.rgbds
-            3: keyword.other.register.rgbds
+            1: constant.numeric.integer.hexadecimal.rgbds
+            2: constant.numeric.integer.decimal.rgbds
+            3: keyword.operator.arithmetic.rgbds
+            4: keyword.other.register.rgbds
           set:
             - expect-a
             - expect-comma
@@ -587,8 +619,17 @@ contexts:
       push:
         - meta_scope: meta.function-call.macro.rgbds
         - match: '\\,' # Escaped commas do not separate macro args
+        - include: parens-macro-arg # Parens auto-escape macro args
         - match: ','
           scope: punctuation.separator.arguments.rgbds
+        - include: eol-pop
+
+  parens-macro-arg:
+    - match: '\('
+      push:
+        - include: parens-macro-arg
+        - match: '\)'
+          pop: true
         - include: eol-pop
 
 
@@ -698,7 +739,7 @@ contexts:
         - expect-section-type-org-not-rom
         - expect-comma
         - expect-string
-        - expect-section-modifier
+        - expect-section-modifier-not-fragment
     - match: '\b(?i:endl)\b'
       scope: keyword.context.block.load.end.rgbds
       push: expect-eol
@@ -836,11 +877,13 @@ contexts:
     - include: else-pop
 
   expect-section-modifier:
-    - match: '\b(?i:union)\b'
-      scope: storage.modifier.section-union.rgbds
-      pop: true
     - match: '\b(?i:fragment)\b'
       scope: storage.modifier.section-fragment.rgbds
+      pop: true
+    - include: expect-section-modifier-not-fragment
+  expect-section-modifier-not-fragment:
+    - match: '\b(?i:union)\b'
+      scope: storage.modifier.section-union.rgbds
       pop: true
     - include: else-pop
 
@@ -990,10 +1033,13 @@ contexts:
       scope: constant.numeric.integer.decimal.rgbds
     - match: '&[0-7][0-7_]*\b'
       scope: constant.numeric.integer.octal.rgbds
+    # FIXME: We don't support arbitrary characters (`-b`)
     - match: '%[01][01_]*\b'
       scope: constant.numeric.integer.binary.rgbds
-    - match: '(?i:(?="|strupr|strlwr|strcat|strsub))'
+    # Strings are implicitly charmap-converted
+    - match: '(?i:(?="|strupr|strlwr|charsub|strsub|strrpl|strcat|strfmt))'
       push: string
+    # FIXME: We don't support arbitrary characters (`-g`)
     - match: '`[0123]+\b'
       scope: constant.numeric.integer.other.rgbds
     - match: ':(?:-+|\++)'
@@ -1001,7 +1047,7 @@ contexts:
     # Duplicated at scope `symbol`, keep in sync
     - match: '@'
       scope: constant.language.rgbds
-    - match: '\b(?i:_RS|__LINE__|__FILE__|__DATE__|__TIME__|__ISO_8601_LOCAL__|__ISO_8601_UTC__|__UTC_YEAR__|__UTC_MONTH__|__UTC_DAY__|__UTC_HOUR__|__UTC_MINUTE__|__UTC_SECOND__|__RGBDS_MAJOR__|__RGBDS_MINOR__|__RGBDS_PATCH__)\b'
+    - match: '\b(?i:_RS|__LINE__|__FILE__|__DATE__|__TIME__|__ISO_8601_LOCAL__|__ISO_8601_UTC__|__UTC_YEAR__|__UTC_MONTH__|__UTC_DAY__|__UTC_HOUR__|__UTC_MINUTE__|__UTC_SECOND__|__RGBDS_MAJOR__|__RGBDS_MINOR__|__RGBDS_PATCH__|__RGBDS_VERSION__)\b'
       scope: constant.language.rgbds
     - match: '\b(?i:_NARG)\b'
       scope: variable.parameter.rgbds
@@ -1052,7 +1098,7 @@ contexts:
         - expect-arg-begin
     # String built-ins
     # Unary string
-    - match: '\b(?i:strlen)\b'
+    - match: '\b(?i:charlen|strlen)\b'
       scope: support.function.string.rgbds
       push:
         - meta-func-call
@@ -1060,7 +1106,7 @@ contexts:
         - expect-string
         - expect-arg-begin
     # Binary string
-    - match: '\b(?i:strcmp|strin)\b'
+    - match: '\b(?i:strcmp|strin|strrin)\b'
       scope: support.function.string.rgbds
       push:
         - meta-func-call
@@ -1076,6 +1122,13 @@ contexts:
         - meta-func-call
         - expect-arg-end
         - expect-bank-arg
+        - expect-arg-begin
+    - match: '\b(?i:sizeof|startof)\b'
+      scope: support.function.bank.rgbds
+      push:
+        - meta-func-call
+        - expect-arg-end
+        - expect-string
         - expect-arg-begin
     - match: '\b(?i:def)\b'
       scope: support.function.def.rgbds
@@ -1140,6 +1193,8 @@ contexts:
         - match: '$\n?'
           scope: invalid.illegal.rgbds
           pop: true
+    ## Note: all builtin names must be duplicated in "num-expression" so that strings are
+    ## correctly detected!
     # Unary builtins
     - match: '\b(?i:strupr|strlwr)\b'
       scope: support.function.string.rgbds
@@ -1149,7 +1204,7 @@ contexts:
         - expect-string
         - expect-arg-begin
     # Binary builtin
-    - match: '\b(?i:strrin)\b'
+    - match: '\b(?i:charsub)\b'
       scope: support.function.string.rgbds
       set:
         - meta-func-call
@@ -1208,7 +1263,7 @@ contexts:
     - match: '@'
       scope: constant.language.rgbds
       pop: true
-    - match: '\b(?i:_RS|__LINE__|__FILE__|__DATE__|__TIME__|__ISO_8601_LOCAL__|__ISO_8601_UTC__|__UTC_YEAR__|__UTC_MONTH__|__UTC_DAY__|__UTC_HOUR__|__UTC_MINUTE__|__UTC_SECOND__|__RGBDS_MAJOR__|__RGBDS_MINOR__|__RGBDS_PATCH__|__RGBDS_RC__)\b'
+    - match: '\b(?i:_RS|__LINE__|__FILE__|__DATE__|__TIME__|__ISO_8601_LOCAL__|__ISO_8601_UTC__|__UTC_YEAR__|__UTC_MONTH__|__UTC_DAY__|__UTC_HOUR__|__UTC_MINUTE__|__UTC_SECOND__|__RGBDS_MAJOR__|__RGBDS_MINOR__|__RGBDS_PATCH__|__RGBDS_RC__|__RGBDS_VERSION__)\b'
       scope: constant.language.rgbds
       pop: true
     - match: '\b(?i:_NARG)\b'

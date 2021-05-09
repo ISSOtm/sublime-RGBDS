@@ -486,3 +486,42 @@ load union "...", romX
 ;      ^ keyword.other.register.rgbds
 ;       ^ punctuation.separator.arguments.rgbds
 ;         ^ invalid.illegal.rgbds
+
+    ld a, SIZEOF("Section name")
+;   ^^ variable.function.instruction.rgbds
+;      ^ keyword.other.register.rgbds
+;       ^ punctuation.separator.arguments.rgbds
+;         ^^^^^^^^^^^^^^^^^^^^^^ meta.function-call.rgbds
+;         ^^^^^^ support.function.bank.rgbds
+;               ^ punctuation.section.arguments.begin.rgbds
+;                ^^^^^^^^^^^^^^ meta.string.rgbds string.quoted.double.rgbds
+;                ^ punctuation.definition.string.begin.rgbds
+;                             ^ punctuation.definition.string.end.rgbds
+;                              ^ punctuation.section.arguments.end.rgbds
+
+    PRINTLN \<42>
+;   ^^^^^^^ keyword.other.rgbds
+;           ^^^^^ variable.parameter.rgbds
+    PRINTLN \<SYMBOL>
+;   ^^^^^^^ keyword.other.rgbds
+;           ^^^^^^^^^ variable.parameter.rgbds
+    PRINTLN \<
+;   ^^^^^^^ keyword.other.rgbds
+;           ^^^ variable.parameter.rgbds
+    PRINTLN \<§!>
+;   ^^^^^^^ keyword.other.rgbds
+;           ^^ variable.parameter.rgbds
+;             ^^^ invalid.illegal.rgbds
+
+    mac_call a,b(c,d),e
+;   ^^^^^^^^^^^^^^^^^^^^ meta.function-call.macro.rgbds
+;   ^^^^^^^^ variable.function.rgbds
+;             ^ punctuation.separator.arguments.rgbds
+;                 ^ -punctuation.separator.arguments.rgbds
+;                    ^ punctuation.separator.arguments.rgbds
+
+; Check than an unterminated parens does not cause problems
+    mac_call a,b(c,d
+    mac_call a, b
+;   ^^^^^^^^^^^^^^ meta.function-call.macro.rgbds
+;             ^ meta.function-call.macro.rgbds punctuation.separator.arguments.rgbds
