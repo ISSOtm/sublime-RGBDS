@@ -426,8 +426,8 @@ PRINT "hi", $BABE
 
 
 redef saucisse equs "sausage"
-; <- keyword.declaration.redef.rgbds
-;^^^^ keyword.declaration.redef.rgbds
+; <- keyword.operator.assignment.redef.rgbds
+;^^^^ keyword.operator.assignment.redef.rgbds
 ;     ^^^^^^^^ entity.name.constant.rgbds
 ;              ^^^^ keyword.operator.assignment.rgbds keyword.operator.word.rgbds
 ;                   ^^^^^^^^^ meta.string.rgbds string.quoted.double.rgbds
@@ -525,3 +525,11 @@ load union "...", romX
     mac_call a, b
 ;   ^^^^^^^^^^^^^^ meta.function-call.macro.rgbds
 ;             ^ meta.function-call.macro.rgbds punctuation.separator.arguments.rgbds
+
+    DEF sym equs "ayaya"
+;   ^^^ keyword.declaration.def.rgbds
+;       ^^^ entity.name.constant.rgbds
+;           ^^^^ keyword.operator.assignment.rgbds keyword.operator.word.rgbds
+;                ^^^^^^^ meta.string.rgbds string.quoted.double.rgbds
+;                ^ punctuation.definition.string.begin.rgbds
+;                      ^ punctuation.definition.string.end.rgbds

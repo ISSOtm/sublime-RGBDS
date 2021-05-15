@@ -1,0 +1,6 @@
+Sublime-RGBDS 2.2.1 changelog:
+
+ - `REDEF` was not handled for numerical symbols
+ - `DEF equs` was not handled
+ - Changed macro snippet to new syntax
+ - Replaced "REPT with counter" snippet with "FOR" one

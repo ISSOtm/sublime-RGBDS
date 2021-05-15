@@ -95,28 +95,31 @@ contexts:
       push:
         - expect-eol
         - expect-string
-    - match: '^\s*((?i:redef))\s*({{symbol_name}})\s+((?i:equs))'
+    - match: '^\s*(?i:(def)|(redef))\s*({{symbol_name}})\s+((?i:equs))'
       captures:
-        1: keyword.declaration.redef.rgbds
-        2: entity.name.constant.rgbds
-        3: keyword.operator.assignment.rgbds keyword.operator.word.rgbds
+        1: keyword.declaration.def.rgbds
+        2: keyword.operator.assignment.redef.rgbds
+        3: entity.name.constant.rgbds
+        4: keyword.operator.assignment.rgbds keyword.operator.word.rgbds
       push:
         - expect-eol
         - expect-string
-    - match: '^\s*((?i:def))\s*({{symbol_name}})\s+((?i:equ|rb|rw|rl))'
+    - match: '^\s*(?i:(def)|(redef))\s*({{symbol_name}})\s+((?i:equ|rb|rw|rl))'
       captures:
         1: keyword.declaration.def.rgbds
-        2: entity.name.constant.rgbds
-        3: keyword.operator.assignment.rgbds keyword.operator.word.rgbds
+        2: keyword.operator.assignment.redef.rgbds
+        3: entity.name.constant.rgbds
+        4: keyword.operator.assignment.rgbds keyword.operator.word.rgbds
       push:
         - expect-eol
         - expect-num-expression
-    - match: '^\s*((?i:def))\s*({{symbol_name}})\s+((?i:(set))|=)'
+    - match: '^\s*(?i:(def)|(redef))\s*({{symbol_name}})\s+((?i:(set))|=)'
       captures:
         1: keyword.declaration.def.rgbds
-        2: entity.name.rgbds
-        3: keyword.operator.assignment.rgbds
-        4: keyword.operator.word.rgbds
+        2: keyword.operator.assignment.redef.rgbds
+        3: entity.name.rgbds
+        4: keyword.operator.assignment.rgbds
+        5: keyword.operator.word.rgbds
       push:
         - expect-eol
         - expect-num-expression

@@ -1,0 +1,10 @@
+<snippet>
+    <scope>source.rgbds</scope>
+    <tabTrigger>for</tabTrigger>
+    <content><![CDATA[
+for ${1:I}, ${2:[start,] stop[, step]}
+	$0
+endr
+]]></content>
+    <description>for … endr</description>
+</snippet>

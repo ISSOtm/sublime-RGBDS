@@ -2,9 +2,9 @@
     <scope>source.rgbds</scope>
     <tabTrigger>MACRO</tabTrigger>
     <content><![CDATA[
-${1:label}: MACRO
+MACRO ${1:label}
 	$0
 ENDM
 ]]></content>
-    <description>label: MACRO … ENDM</description>
+    <description>MACRO label … ENDM</description>
 </snippet>
