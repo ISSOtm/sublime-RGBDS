@@ -548,12 +548,14 @@ load union "...", romX
 ;^^^^^^^ meta.block.macro.rgbds
 ;   ^^^^ keyword.declaration.end.macro.rgbds
 
-db "a{SYMBOL}b"
+db "a{d:SYMBOL}b"
 ;    ^ punctuation.section.interpolation.begin.rgbds
-;     ^^^^^^ source.rgbds.embedded
-;           ^ punctuation.section.interpolation.end.rgbds
+;     ^^ punctuation.section.interpolation.begin.rgbds
+;       ^^^^^^ source.rgbds.embedded
+;    ^^^^^^^^^^ - string
+;             ^ punctuation.section.interpolation.end.rgbds
 ;   ^ meta.string.rgbds string.quoted.double.rgbds
-;            ^ meta.string.rgbds string.quoted.double.rgbds
+;              ^ meta.string.rgbds string.quoted.double.rgbds
 db {STRING}
 ;  ^ punctuation.section.interpolation.begin.rgbds
 ;   ^^^^^^ source.rgbds.embedded
