@@ -563,3 +563,8 @@ db {STRING}
 
     mac a,"b,c",d
 ;           ^ - punctuation.separator.arguments.rgbds
+
+; Line continuations should continue their scope (but I can't get it to work)
+    mac a \
+        b
+;       ^ meta.function-call.macro.rgbds

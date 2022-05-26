@@ -36,8 +36,8 @@ contexts:
   prototype:
     - include: comments
     - include: macro-args
-    # TODO: they probably conflict with string interpolations..?
     - include: interpolations
+    - include: line-conts
 
   # There is no need to separate most of these, but categorization helps, and then why
   # not just use the same one as RGBDS' grammar?
@@ -109,6 +109,16 @@ contexts:
       pop: true # Let the upcoming macro arg or interpolation take over
     - match: $
       pop: true
+
+  line-conts:
+    - match: '(\\)[ \t]*(;.+)?\n'
+      captures:
+        1: punctuation.separator.continuation.rgbds
+        2: comment.line.semi-colon.rgbds
+    # Any backslash followed by whitespace is assumed to be a line continuation; however,
+    # if the above didn't match, then it's not a valid line continuation, and thus invalid.
+    - match: '\\[ \t]+'
+      scope: invalid.illegal.rgbds
 
 
 
