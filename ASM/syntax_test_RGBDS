@@ -560,3 +560,6 @@ db {STRING}
 ;  ^ punctuation.section.interpolation.begin.rgbds
 ;   ^^^^^^ source.rgbds.embedded
 ;         ^ punctuation.section.interpolation.end.rgbds
+
+    mac a,"b,c",d
+;           ^ - punctuation.separator.arguments.rgbds

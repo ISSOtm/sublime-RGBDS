@@ -650,6 +650,14 @@ contexts:
         - include: parens-macro-arg # Parens auto-escape macro args
         - match: ','
           scope: punctuation.separator.arguments.rgbds
+        - match: '"""'
+          push:
+            - match: '"""'
+              pop: true
+        - match: '"'
+          push:
+            - match: '"'
+              pop: true
         - include: eol-pop
 
   parens-macro-arg:
