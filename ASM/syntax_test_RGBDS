@@ -533,3 +533,13 @@ load union "...", romX
 ;                ^^^^^^^ meta.string.rgbds string.quoted.double.rgbds
 ;                ^ punctuation.definition.string.begin.rgbds
 ;                      ^ punctuation.definition.string.end.rgbds
+
+    MACRO lb
+;   ^^^^^^^^ meta.block.macro.rgbds meta.function.rgbds
+;   ^^^^^ keyword.declaration.macro.rgbds
+;         ^^ entity.name.macro.rgbds
+        ld \1, (LOW(\2) << 8 | LOW(\3))
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ meta.block.macro.rgbds
+    ENDM
+;^^^^^^^ meta.block.macro.rgbds
+;   ^^^^ keyword.declaration.end.macro.rgbds

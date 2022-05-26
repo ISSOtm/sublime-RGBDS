@@ -139,7 +139,7 @@ contexts:
         - expect-eol
         - expect-num-expression
 
-    - match: '^((?i:macro))\s+({{symbol_name}})\b'
+    - match: '^\s*((?i:macro))\s+({{symbol_name}})\b'
       scope: meta.function.rgbds
       captures:
         1: keyword.declaration.macro.rgbds
