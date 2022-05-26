@@ -67,12 +67,16 @@ contexts:
   macro-args:
     - match: '\\[1-9]'
       scope: variable.parameter.rgbds
+      push: unknown
     - match: '\\@'
       scope: variable.parameter.unique.rgbds
+      push: unknown
     - match: '\\#'
       scope: variable.parameter.all.rgbds
+      push: unknown
     - match: '\\<[0-9]+>'
       scope: variable.parameter.rgbds
+      push: unknown
     # Otherwise, it must be followed by a symbol name
     - match: '\\<'
       push:
@@ -82,7 +86,7 @@ contexts:
   expect-closing-angle:
     - meta_scope: variable.parameter.rgbds
     - match: '>'
-      pop: true
+      set: unknown
     - include: else-pop
 
   interpolations:
@@ -97,7 +101,14 @@ contexts:
         - include: interpolations
         - match: '}'
           scope: punctuation.section.interpolation.end.rgbds
-          pop: true
+          set: unknown
+
+  # Used after "meta" constructs (macro args, interpolations), since the rest of the line could really be anything.
+  unknown:
+    - match: '.*?(?=\\[1-9@#<]|\{)'
+      pop: true # Let the upcoming macro arg or interpolation take over
+    - match: $
+      pop: true
 
 
 
