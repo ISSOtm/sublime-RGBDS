@@ -543,3 +543,14 @@ load union "...", romX
     ENDM
 ;^^^^^^^ meta.block.macro.rgbds
 ;   ^^^^ keyword.declaration.end.macro.rgbds
+
+db "a{SYMBOL}b"
+;    ^ punctuation.section.interpolation.begin.rgbds
+;     ^^^^^^ source.rgbds.embedded
+;           ^ punctuation.section.interpolation.end.rgbds
+;   ^ meta.string.rgbds string.quoted.double.rgbds
+;            ^ meta.string.rgbds string.quoted.double.rgbds
+db {STRING}
+;  ^ punctuation.section.interpolation.begin.rgbds
+;   ^^^^^^ source.rgbds.embedded
+;         ^ punctuation.section.interpolation.end.rgbds

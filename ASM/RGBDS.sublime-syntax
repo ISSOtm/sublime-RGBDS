@@ -37,7 +37,7 @@ contexts:
     - include: comments
     - include: macro-args
     # TODO: they probably conflict with string interpolations..?
-    #- include: interpolations
+    - include: interpolations
 
   # There is no need to separate most of these, but categorization helps, and then why
   # not just use the same one as RGBDS' grammar?
@@ -84,6 +84,20 @@ contexts:
     - match: '>'
       pop: true
     - include: else-pop
+
+  interpolations:
+    - match: '{(?:[^}:](:))?'
+      scope: punctuation.section.interpolation.begin.rgbds
+      captures:
+        1: punctuation.separator.fmt.rgbds
+      push:
+        - clear_scopes: 1
+        - meta_scope: meta.interpolation.rgbds
+        - meta_content_scope: source.rgbds.embedded
+        - include: interpolations
+        - match: '}'
+          scope: punctuation.section.interpolation.end.rgbds
+          pop: true
 
 
 
@@ -1167,13 +1181,13 @@ contexts:
       set:
         - meta_scope: meta.string.rgbds string.quoted.triple.rgbds
         - meta_include_prototype: false
+        - include: interpolations
         - match: '\\[1-9@#]'
           scope: variable.parameter.rgbds
         - match: '\\[\\",{}nrt]'
           scope: constant.character.escape.rgbds
         - match: '\\.'
           scope: invalid.illegal.rgbds
-        - include: string-interpolation
         - match: '"""'
           scope: punctuation.definition.string.end.rgbds
           pop: true
@@ -1182,13 +1196,13 @@ contexts:
       set:
         - meta_scope: meta.string.rgbds string.quoted.double.rgbds
         - meta_include_prototype: false
+        - include: interpolations
         - match: '\\[1-9@#]'
           scope: variable.parameter.rgbds
         - match: '\\[\\",{}nrt]'
           scope: constant.character.escape.rgbds
         - match: '\\.'
           scope: invalid.illegal.rgbds
-        - include: string-interpolation
         - match: '"'
           scope: punctuation.definition.string.end.rgbds
           pop: true
@@ -1243,20 +1257,6 @@ contexts:
         - expect-arg-end
         - expect-fmt-list
         - expect-arg-begin
-
-  string-interpolation:
-    - match: '{(?:[^}:](:))?'
-      scope: punctuation.section.interpolation.begin.rgbds
-      captures:
-        1: punctuation.separator.fmt.rgbds
-      push:
-        - clear_scopes: 1
-        - meta_scope: meta.interpolation.rgbds
-        - meta_content_scope: source.rgbds.embedded
-        - include: string-interpolation
-        - match: '}'
-          scope: punctuation.section.interpolation.end.rgbds
-          pop: true
 
 
   expect-symbol:
