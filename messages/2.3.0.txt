@@ -1,0 +1,15 @@
+Sublime-RGBDS 2.3.0 changelog:
+
+This highlighter fell into a bit of disrepair, since I focused more on updating RGBDS itself and other GBDev projects. Thanks @eievui50 for pointing out a few shortcomings!
+
+ - Lines are not highlighted anymore after "meta" constructs, such as macro args, since it was wrong more often than not
+ - Syntax has been (mostly?) synched with RGBDS updates, including removal of some deprecated constructs
+ - Indented "new-style" macro definitions are now correctly accepted
+ - Interpolations are correctly accepted outside of strings as well
+ - Interpolations in strings now have the correct scopes properly applied
+ - "Strings" in macro args now correctly "escape" commas
+ - Line continuations are now highlighted as such (caveat: the enclosing scope does not continue past them. I haven't figured out how to do that.)
+
+I wish to thank every one of you using this package for your continued support. Please do not hesitate to report bugs at https://github.com/ISSOtm/sublime-RGBDS/issues!
+
+If you would like to help, some of GBDev's projects are open for help. Please contact me (https://eldred.fr/about)!
