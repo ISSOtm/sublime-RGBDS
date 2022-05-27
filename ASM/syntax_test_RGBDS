@@ -568,3 +568,10 @@ db {STRING}
     mac a \
         b
 ;       ^ meta.function-call.macro.rgbds
+
+; Commas take precedence over `b` and `g` parsing
+opt b, g,
+;   ^ keyword.other.rgbds
+;    ^ punctuation.separator.sequence.rgbds
+;      ^ keyword.other.rgbds
+;       ^ punctuation.separator.sequence.rgbds

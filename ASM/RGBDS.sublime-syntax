@@ -16,13 +16,14 @@ variables:
     (?:\b(?ix: # Possible values for a label that conflict with a token
       adc|add|and|bit|call|ccf|cpl|cp|daa|dec|di|ei|halt|inc|jp|jr|ld|ldi|ldd|ldio|ldh|nop|or|pop|push|res|reti|ret|rlca|rlc|rla|rl|rrc|rrca|rra|rr|rst|sbc|scf|set|sla|sra|srl|stop|sub|swap|xor| # Instructions
       nz|z|nc| # Conditions (`c` is in the register list)
-      af|bc|de|hl|sp|a|b|c|d|e|h|l| # Registers
-      def|bank|align|round|ceil|floor|div|mul|sin|cos|tan|asin|acos|atan|atan2|pow|log|high|low|isconst|sizeof|startof|strcmp|strin|strsub|strlen|strcat|strupr|strlwr|strrin|strrpl|strfmt| # Functions
-      include|print|println|printt|printi|printv|printf|export|ds|db|dw|dl|section|purge|rsreset|rsset|incbin|charmap|newcharmap|setcharmap|fail|warn|fatal|assert|static_assert|shift|opt|break| # Pseudo-ops
+      af|bc|de|hl[id]?|sp|a|b|c|d|e|h|l| # Registers
+      def|bank|align|round|ceil|floor|div|mul|sin|cos|tan|asin|acos|atan|atan2|pow|log|high|low|isconst|sizeof|startof|strcmp|strin|strsub|strlen|strcat|strupr|strlwr|strrin|strrpl|strfmt|charlen|charsub| # Functions
+      include|print|println|export|ds|db|dw|dl|section|purge|rsreset|rsset|incbin|charmap|newcharmap|setcharmap|fail|warn|fatal|assert|static_assert|shift|opt|break| # Directives
       macro|endm|rept|for|endr|load|endl|pushc|popc|union|nextu|endu|pushs|pops|pusho|popo| # Block delimiters
       if|else|elif|endc| # Conditionals
-      wram0|vram|romx|rom0|hram|wramx|sram|oam| # Section types
-      rb|rw|equ|equs|redef # Variable definitions (`set` and `rl` are in the instruction list)
+      wram0|vram|romx|rom0|hram|wramx|sram|oam|fragment| # Section types
+      rb|rw|equ|equs|redef| # Variable definitions (`set` and `rl` are in the instruction list)
+      \. # A period. Period.
     )(?!{{symbol_char}}))
 
   symbol_name: '(?:(?!{{reserved}}){{symbol_char}}+(?!{{symbol_char}}))'
@@ -31,7 +32,7 @@ variables:
 
 
 # This is written more or less following RGBDS' grammar definition
-# https://github.com/rednex/rgbds/blob/master/src/asm/asmy.y
+# https://github.com/gbdev/rgbds/blob/master/src/asm/asmy.y
 contexts:
   prototype:
     - include: comments
@@ -42,11 +43,11 @@ contexts:
   # There is no need to separate most of these, but categorization helps, and then why
   # not just use the same one as RGBDS' grammar?
   main:
-    - include: pseudoop
-    - include: label # Make sure that this is included *after* `pseudoop`!
-    - include: cpu-command
-    - include: macro-call # Make sure that this is included *after* `pseudoop` and `label`!
-    - include: simple-pseudoop
+    - include: directive
+    - include: label # Make sure that this is included *after* `directive`!
+    - include: cpu-instr
+    - include: macro-call # Make sure that this is included *after* `directive` and `label`!
+    - include: simple-directive
 
 
   comments:
@@ -122,7 +123,7 @@ contexts:
 
 
 
-  pseudoop:
+  directive:
     - match: '^({{symbol_name}})\s+((?i:equs))'
       captures:
         1: entity.name.constant.rgbds
@@ -148,13 +149,12 @@ contexts:
       push:
         - expect-eol
         - expect-num-expression
-    - match: '^\s*(?i:(def)|(redef))\s*({{symbol_name}})\s+((?i:(set))|=)'
+    - match: '^\s*(?i:(def)|(redef))\s*({{symbol_name}})\s+(=)'
       captures:
         1: keyword.declaration.def.rgbds
         2: keyword.operator.assignment.redef.rgbds
         3: entity.name.rgbds
         4: keyword.operator.assignment.rgbds
-        5: keyword.operator.word.rgbds
       push:
         - expect-eol
         - expect-num-expression
@@ -165,14 +165,39 @@ contexts:
       push:
         - expect-eol
         - expect-num-expression
-    - match: '^({{symbol_name}})\s+((?i:(set))|=)'
+    - match: '^({{symbol_name}})\s+(=)'
       captures:
         1: entity.name.rgbds
         2: keyword.operator.assignment.rgbds
-        3: keyword.operator.word.rgbds
       push:
         - expect-eol
         - expect-num-expression
+
+    - match: '\b(?i:if)\b'
+      scope: keyword.control.conditional.if.rgbds
+      push:
+        - if-body
+        - expect-eol
+        - expect-num-expression
+
+    - match: '\b(?i:rept)\b'
+      scope: keyword.control.loop.for.rgbds
+      push:
+        - rept-body
+        - expect-eol
+        - expect-num-expression
+    - match: '\b(?i:for)\b'
+      scope: keyword.control.loop.for.rgbds
+      push:
+        - rept-body
+        - expect-eol
+        - expect-num-expression
+        - expect-comma
+        - expect-num-expression
+        - expect-comma
+        - expect-num-expression
+        - expect-comma
+        - expect-symbol
 
     - match: '^\s*((?i:macro))\s+({{symbol_name}})\b'
       scope: meta.function.rgbds
@@ -237,7 +262,7 @@ contexts:
 
 
 
-  cpu-command:
+  cpu-instr:
     # Instructions without args
     - match: '\b(?i:ccf|cpl|daa|di|ei|halt|nop|reti|rla|rlca|rra|rrca|scf)\b'
       scope: variable.function.instruction.rgbds
@@ -680,19 +705,9 @@ contexts:
 
 
 
-  simple-pseudoop:
+  simple-directive:
     - match: '\b(?i:include)\b'
       scope: keyword.control.import.rgbds
-      push:
-        - expect-eol
-        - expect-string
-    - match: '\b(?i:print[fvi])\b'
-      scope: keyword.other.rgbds invalid.deprecated.rgbds
-      push:
-        - expect-eol
-        - expect-num-expression
-    - match: '\b(?i:printt)\b'
-      scope: keyword.other.rgbds invalid.deprecated.rgbds
       push:
         - expect-eol
         - expect-string
@@ -701,15 +716,6 @@ contexts:
       push:
         - expect-eol
         - expect-fmt-list
-    - match: '\b(?i:if)\b'
-      scope: keyword.control.conditional.if.rgbds
-      push:
-        - if-body
-        - expect-eol
-        - expect-num-expression
-    - match: '\b(?i:break)\b'
-      scope: keyword.control.flow.break.rgbds
-      push: expect-eol
     - match: '\b(?i:export)\b'
       scope: keyword.export.rgbds
       push:
@@ -789,24 +795,6 @@ contexts:
     - match: '\b(?i:endl)\b'
       scope: keyword.context.block.load.end.rgbds
       push: expect-eol
-    - match: '\b(?i:rept)\b'
-      scope: keyword.control.loop.for.rgbds
-      push:
-        - rept-body
-        - expect-eol
-        - expect-num-expression
-    - match: '\b(?i:for)\b'
-      scope: keyword.control.loop.for.rgbds
-      push:
-        - rept-body
-        - expect-eol
-        - expect-num-expression
-        - expect-comma
-        - expect-num-expression
-        - expect-comma
-        - expect-num-expression
-        - expect-comma
-        - expect-symbol
     - match: '\b(?i:shift)\b'
       scope: keyword.operator.assignment.rgbds
       push:
@@ -837,7 +825,7 @@ contexts:
       scope: keyword.other.rgbds
       push:
         - expect-eol
-        - expect-symbol-list # FIXME: that's not what it really is, but close enough
+        - expect-opt-list
     - match: '\b(?i:align)\b'
       scope: keyword.other.align.rgbds
       push:
@@ -916,6 +904,51 @@ contexts:
     - include: string
     - include: else-pop
 
+  expect-opt-list:
+    - match: ''
+      set:
+        - expect-opt-list_
+        - expect-opt
+  expect-opt-list_:
+    - match: ','
+      scope: punctuation.separator.sequence.rgbds
+      set:
+        - expect-opt-list_
+        - expect-opt
+    - include: eol-pop
+  expect-opt:
+    - match: '(!)?([HhLl])'
+      captures:
+        1: keyword.operator.logical.rgbds
+        2: keyword.other.rgbds
+      set: expect-after-opt
+    - match: '(b)[^,]{0,2}'
+      captures:
+        1: keyword.other.rgbds
+      set: expect-after-opt
+    - match: '(g)[^,]{0,4}'
+      captures:
+        1: keyword.other.rgbds
+      set: expect-after-opt
+    - match: '(p)([0-9A-Fa-f]*)'
+      captures:
+        1: keyword.other.rgbds
+        2: constant.numeric.integer.hexadecimal.rgbds
+      set: expect-after-opt
+    - match: '(r)\s*([0-9]*)'
+      captures:
+        1: keyword.other.rgbds
+        2: constant.numeric.integer.decimal.rgbds
+      set: expect-after-opt
+    - match: 'W[^,]*'
+      scope: variable.parameter.option.shell
+      set: expect-after-opt
+    - include: expect-after-opt
+  expect-after-opt:
+    - match: '[^\s,]+'
+      scope: invalid.illegal.rgbds
+    - include: else-pop
+
   expect-optional-expression:
     - match: ','
       scope: punctuation.separator.sequence.rgbds
@@ -988,6 +1021,9 @@ contexts:
     - match: '\b(?i:endr)\b'
       scope: keyword.control.loop.end.rgbds
       set: expect-eol # Implicit `pop` here!
+    - match: '\b(?i:break)\b'
+      scope: keyword.control.flow.break.rgbds
+      push: expect-eol
     - include: main
 
   expect-optional-string:
