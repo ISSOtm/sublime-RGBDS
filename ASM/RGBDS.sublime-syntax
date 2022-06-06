@@ -65,6 +65,7 @@ contexts:
           scope: punctuation.definition.comment.end.rgbds
           pop: true
 
+  # Duplicated in non-generic-macro-args due to special handling
   macro-args:
     - match: '\\[1-9]'
       scope: variable.parameter.rgbds
@@ -81,6 +82,7 @@ contexts:
     # Otherwise, it must be followed by a symbol name
     - match: '\\<'
       push:
+        - unknown
         - expect-closing-angle
         - expect-symbol
 
@@ -100,6 +102,7 @@ contexts:
         - meta_scope: meta.interpolation.rgbds
         - meta_content_scope: source.rgbds.embedded
         - include: interpolations
+        - include: non-generic-macro-args
         - match: '}'
           scope: punctuation.section.interpolation.end.rgbds
           set: unknown
@@ -1246,13 +1249,8 @@ contexts:
       set:
         - meta_scope: meta.string.rgbds string.quoted.triple.rgbds
         - meta_include_prototype: false
+        - include: non-generic-macro-args
         - include: string-interpolations
-        - match: '\\[1-9@#]'
-          scope: variable.parameter.rgbds
-        - match: '\\[\\",{}nrt]'
-          scope: constant.character.escape.rgbds
-        - match: '\\.'
-          scope: invalid.illegal.rgbds
         - match: '"""'
           scope: punctuation.definition.string.end.rgbds
           pop: true
@@ -1261,13 +1259,8 @@ contexts:
       set:
         - meta_scope: meta.string.rgbds string.quoted.double.rgbds
         - meta_include_prototype: false
+        - include: non-generic-macro-args
         - include: string-interpolations
-        - match: '\\[1-9@#]'
-          scope: variable.parameter.rgbds
-        - match: '\\[\\",{}nrt]'
-          scope: constant.character.escape.rgbds
-        - match: '\\.'
-          scope: invalid.illegal.rgbds
         - match: '"'
           scope: punctuation.definition.string.end.rgbds
           pop: true
@@ -1323,6 +1316,23 @@ contexts:
         - expect-fmt-list
         - expect-arg-begin
 
+  # This is used when the macro args are part of an otherwise special scope (typically interpolations)
+  # that should be returned to normally instead of treating all up to EOL as unknown
+  non-generic-macro-args:
+    - match: '\\[1-9]'
+      scope: variable.parameter.rgbds
+    - match: '\\@'
+      scope: variable.parameter.unique.rgbds
+    - match: '\\#'
+      scope: variable.parameter.all.rgbds
+    - match: '\\<[0-9]+>'
+      scope: variable.parameter.rgbds
+    # Otherwise, it must be followed by a symbol name
+    - match: '\\<'
+      push:
+        - expect-closing-angle
+        - expect-symbol
+
   string-interpolations:
     - match: '{(?:[^}:](:))?'
       scope: punctuation.section.interpolation.begin.rgbds
@@ -1332,7 +1342,9 @@ contexts:
         - clear_scopes: 1
         - meta_scope: meta.interpolation.rgbds
         - meta_content_scope: source.rgbds.embedded
-        - include: interpolations
+        - meta_include_prototype: false
+        - include: string-interpolations
+        - include: non-generic-macro-args
         - match: '}'
           scope: punctuation.section.interpolation.end.rgbds
           pop: true

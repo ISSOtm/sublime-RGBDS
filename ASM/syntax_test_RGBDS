@@ -569,9 +569,15 @@ db {STRING}
         b
 ;       ^ meta.function-call.macro.rgbds
 
-; Commas take precedence over `b` and `g` parsing
+; Commas take precedence over `b` and `g` parsing, even when incomplete
 opt b, g,
 ;   ^ keyword.other.rgbds
 ;    ^ punctuation.separator.sequence.rgbds
 ;      ^ keyword.other.rgbds
 ;       ^ punctuation.separator.sequence.rgbds
+
+; Macro args in interpolations (string or not) should not override the end of the interpolation
+db "{inter\1polation}", 0, 1, 2
+;                    ^^^^^^^^^^ - source.rgbds.embedded
+{test\1st} blah blah blah
+;         ^^^^^^^^^^^^^^^^ - source.rgbds.embedded
