@@ -1,0 +1,11 @@
+Sublime-RGBDS 2.3.1 changelog:
+
+ - Macro arguments in interpolations do not cause most subsequent highlighting to fail anymore
+ - `def`/`redef` assignments now "degrade" more gracefully: highlighting remains correct when no symbol name is there yet, macro args or interpolations are present in the symbol name, etc.
+ - Compound assignments are now supported (oops, missed those, my bad!)
+ - Use the same rules as RGBASM for symbol names instead of being too lax; `(re)def` assignments are still too lax, but that's a necessary evil, sorry
+ - Unrecognized characters at top level are now marked as "invalid"; please tell me if this creates too much red for you!
+
+I wish to thank every one of you using this package for your continued support. Please do not hesitate to report bugs at https://github.com/ISSOtm/sublime-RGBDS/issues!
+
+If you would like to help, some of GBDev's projects are open for help. Please contact me (https://eldred.fr/about)!
