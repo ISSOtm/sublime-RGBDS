@@ -104,7 +104,7 @@ contexts:
       push:
         - meta_scope: meta.interpolation.rgbds
         - meta_content_scope: source.rgbds.embedded
-        - include: interpolations
+        - include: timid-interpolations
         - include: timid-macro-args
         - match: '}'
           scope: punctuation.section.interpolation.end.rgbds
