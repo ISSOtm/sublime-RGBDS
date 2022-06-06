@@ -156,7 +156,7 @@ contexts:
               set:
                 - expect-eol
                 - expect-num-expression
-            - match: '='
+            - match: '(?:[-+*/%&|^]|<<|>>)?='
               scope: keyword.operator.assignment.rgbds
               set:
                 - expect-eol
@@ -170,7 +170,7 @@ contexts:
       push:
         - expect-eol
         - expect-num-expression
-    - match: '^({{symbol_name}})\s+(=)'
+    - match: '^({{symbol_name}})\s+((?:[-+*/%&|^]|<<|>>)?=)'
       captures:
         1: entity.name.rgbds
         2: keyword.operator.assignment.rgbds
