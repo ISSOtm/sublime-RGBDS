@@ -49,6 +49,8 @@ contexts:
     - include: cpu-instr
     - include: macro-call # Make sure that this is included *after* `directive` and `label`!
     - include: simple-directive
+    - match: \S
+      scope: invalid.illegal.rgbds
 
 
   comments:

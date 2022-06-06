@@ -602,3 +602,6 @@ db "{inter\1polation}", 0, 1, 2
 ;     ^^^^^^^^ meta.interpolation.rgbds
 ;    ^^^^^^^^^^ entity.name.rgbds
 ;              ^^^^^^^^^ - entity.name.rgbds
+
+ 0abc
+;^ invalid.illegal.rgbds
