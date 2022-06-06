@@ -104,6 +104,7 @@ contexts:
       push:
         - meta_scope: meta.interpolation.rgbds
         - meta_content_scope: source.rgbds.embedded
+        - meta_include_prototype: false
         - include: timid-interpolations
         - include: timid-macro-args
         - match: '}'
@@ -479,6 +480,7 @@ contexts:
             - expect-comma
             - expect-closing-bracket
             - expect-num-expression
+        - include: eol-pop
     - match: '\b(?i:sp)\b' # Target is sp
       scope: keyword.other.register.rgbds
       set:
