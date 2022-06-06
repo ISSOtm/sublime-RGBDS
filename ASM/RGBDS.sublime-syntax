@@ -704,6 +704,7 @@ contexts:
           push:
             - match: '"'
               pop: true
+            - include: eol-pop
         - include: eol-pop
 
   parens-macro-arg:
@@ -846,15 +847,15 @@ contexts:
 
   if-body:
     - meta_content_scope: meta.block.if.rgbds
-    - match: '\b(?i:elif)\b'
+    - match: '^\s*(?i:elif)\b'
       scope: keyword.control.conditional.elseif.rgbds
       push:
         - expect-eol
         - expect-num-expression
-    - match: '\b(?i:else)\b'
+    - match: '^\s*(?i:else)\b'
       scope: keyword.control.conditional.else.rgbds
       push: expect-eol
-    - match: '\b(?i:endc)\b'
+    - match: '^\s*(?i:endc)\b'
       scope: keyword.control.conditional.end.if.rgbds
       set: expect-eol # Implicit `pop` here!
     - include: main
