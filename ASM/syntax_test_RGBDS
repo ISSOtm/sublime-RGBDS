@@ -581,3 +581,24 @@ db "{inter\1polation}", 0, 1, 2
 ;                    ^^^^^^^^^^ - source.rgbds.embedded
 {test\1st} blah blah blah
 ;         ^^^^^^^^^^^^^^^^ - source.rgbds.embedded
+
+; `def` should degrade gracefully with macro args and all
+ def
+;^^^ keyword.declaration.def.rgbds
+ redef
+;^^^^^ keyword.operator.assignment.redef.rgbds
+ def a\1b equ other
+;^^^ keyword.declaration.def.rgbds
+;     ^^ variable.parameter.rgbds
+;    ^^^^ entity.name.rgbds
+;        ^^^^^^^^^^ - entity.name.rgbds
+ def \1 equ thing
+;^^^ keyword.declaration.def.rgbds
+;    ^^ variable.parameter.rgbds
+;    ^^ entity.name.rgbds
+;      ^^^^^^^^^^ - entity.name.rgbds
+ def a{strsym}b equ blah
+;^^^ keyword.declaration.def.rgbds
+;     ^^^^^^^^ meta.interpolation.rgbds
+;    ^^^^^^^^^^ entity.name.rgbds
+;              ^^^^^^^^^ - entity.name.rgbds
