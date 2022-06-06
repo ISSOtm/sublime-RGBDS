@@ -11,6 +11,7 @@ scope: source.rgbds
 version: 2
 
 variables:
+  symbol_first_char: '[a-zA-Z_]'
   symbol_char: '[a-zA-Z0-9_\\@#]'
   reserved: |-
     (?:\b(?ix: # Possible values for a label that conflict with a token
@@ -26,7 +27,7 @@ variables:
       \. # A period. Period.
     )(?!{{symbol_char}}))
 
-  symbol_name: '(?:(?!{{reserved}}){{symbol_char}}+(?!{{symbol_char}}))'
+  symbol_name: '(?:(?!{{reserved}}){{symbol_first_char}}{{symbol_char}}*(?!{{symbol_char}}))'
 
   condition: '(?:\b(?i:n?[cz])\b)'
 
