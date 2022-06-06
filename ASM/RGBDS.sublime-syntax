@@ -206,6 +206,9 @@ contexts:
         - expect-num-expression
         - expect-comma
         - expect-symbol
+    - match: '\b(?i:break)\b'
+      scope: keyword.control.flow.break.rgbds
+      push: expect-eol
 
     - match: '^\s*((?i:macro))\s+({{symbol_name}})\b'
       scope: meta.function.rgbds
