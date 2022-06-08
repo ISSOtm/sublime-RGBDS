@@ -1332,6 +1332,8 @@ contexts:
   string-escapes:
     - match: '\\[\\"{}nrt]'
       scope: constant.character.escape.rgbds
+    - match: '%[duxXbofs%]'
+      scope: constant.other.placeholder.rgbds
 
   # This is used when the macro args are part of an otherwise special scope (typically interpolations)
   # that should be returned to normally instead of treating all up to EOL as unknown
