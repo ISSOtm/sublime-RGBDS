@@ -695,6 +695,7 @@ contexts:
       push:
         - meta_scope: meta.function-call.macro.rgbds
         - match: '\\,' # Escaped commas do not separate macro args
+          scope: constant.character.escape.rgbds
         - include: parens-macro-arg # Parens auto-escape macro args
         - match: ','
           scope: punctuation.separator.arguments.rgbds
