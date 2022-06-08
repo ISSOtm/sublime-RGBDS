@@ -1,0 +1,11 @@
+Sublime-RGBDS 2.3.2 changelog:
+
+ - The `BREAK` directive is now recognized (oops)
+ - "Strings" in macro args properly end at EOL (fixes major breakage)
+ - Nested interpolations now work properly, too.
+ - Unclosed brackets no longer cause major breakage.
+ - Character escapes and `STRFMT` format specifiers are now highlighted in strings.
+ - Escaped commas in macro args are now highlighted differently, instead of just not highlighted like regular commas.
+ - Comments after macro args and interpolations will now be highlighted; this should yield a few false positives, but they should be rare.
+
+If you would like to help, some of GBDev's projects are open for help. Please contact me (https://eldred.fr/about)!
