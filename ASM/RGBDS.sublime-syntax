@@ -1260,6 +1260,7 @@ contexts:
       set:
         - meta_scope: meta.string.rgbds string.quoted.triple.rgbds
         - meta_include_prototype: false
+        - include: string-escapes
         - include: timid-macro-args
         - include: string-interpolations
         - match: '"""'
@@ -1270,6 +1271,7 @@ contexts:
       set:
         - meta_scope: meta.string.rgbds string.quoted.double.rgbds
         - meta_include_prototype: false
+        - include: string-escapes
         - include: timid-macro-args
         - include: string-interpolations
         - match: '"'
@@ -1326,6 +1328,10 @@ contexts:
         - expect-arg-end
         - expect-fmt-list
         - expect-arg-begin
+
+  string-escapes:
+    - match: '\\[\\"{}nrt]'
+      scope: constant.character.escape.rgbds
 
   # This is used when the macro args are part of an otherwise special scope (typically interpolations)
   # that should be returned to normally instead of treating all up to EOL as unknown
