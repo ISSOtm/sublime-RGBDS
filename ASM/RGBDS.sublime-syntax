@@ -113,6 +113,7 @@ contexts:
 
   # Used after "meta" constructs (macro args, interpolations), since the rest of the line could really be anything.
   unknown:
+    - include: comments # These "meta" constructs rarely exclude comments
     - match: '.*?(?=\\[1-9@#<]|\{)'
       pop: true # Let the upcoming macro arg or interpolation take over
     - match: $
