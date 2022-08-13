@@ -1,0 +1,5 @@
+Sublime-RGBDS 2.4.0 changelog:
+
+ - Added syntax highlighting for debugfiles (https://github.com/aaaaaa123456789/gb-debugfiles)
+
+If you would like to help, some of GBDev's projects are open for help. Please contact me (https://eldred.fr/about)!
