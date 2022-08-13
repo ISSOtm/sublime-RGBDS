@@ -1,0 +1,29 @@
+{
+	"scope": "meta.tentative-directive.debugfile",
+
+	"completions": [
+		{ "trigger": "@debugfile", "contents": "debugfile ${1:version}" },
+
+		{ "trigger": "@always", "contents": "always" },
+		{ "trigger": "@ifemu", "contents": "ifemu ${1:spec}${2/.+/, /}${2:spec}" },
+		{ "trigger": "@ifnotemu", "contents": "ifnotemu ${1:spec}${2/.+/, /}${2:spec}" },
+		{ "trigger": "@else", "contents": "else" },
+
+		{ "trigger": "@sym", "contents": "sym ${1:wSomeVar} ${2:\\$CAFE}" },
+		{ "trigger": "@alias", "contents": "alias ${1:wMyAlias} \"${2:Weird!Symbol!Name}\"" },
+		{ "trigger": "@var", "contents": "var ${1:_name} ${2:42}" },
+		{ "trigger": "@str", "contents": "str ${1:name} \"${2:Hello World!}\"" },
+
+		{ "trigger": "@group", "contents": "group ${1:name}${2/.+/ \"/}${2:Display name}${2/.+/\"/}" },
+		{ "trigger": "@endgroup", "contents": "endgroup" },
+
+		{ "trigger": "@include", "contents": "include \"${1:path/to/file}\"" },
+		{ "trigger": "@symfile", "contents": "symfile \"${1:path/to/file}\"" },
+
+		{ "trigger": "@radix", "contents": "radix ${1:2|10|16}" },
+		{ "trigger": "@signedness", "contents": "signedness ${1:1|0}" },
+
+		{ "trigger": "@warning", "contents": "warning \"${1:message}\"" },
+		{ "trigger": "@error", "contents": "error \"${1:message}\"" },
+	]
+}

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>name</key>
+  <string>Debugfiles metadata</string>
+  <key>scope</key>
+  <string>source.debugfile</string>
+  <key>settings</key>
+  <dict>
+    <key>shellVariables</key>
+    <array>
+      <dict>
+        <key>name</key>
+        <string>TM_COMMENT_START</string>
+        <key>value</key>
+        <string>; </string>
+      </dict>
+      <dict>
+        <key>name</key>
+        <string>TM_COMMENT_DISABLE_INDENT</string>
+        <key>value</key>
+        <string>yes</string>
+      </dict>
+    </array>
+  </dict>
+  <key>uuid</key>
+  <string>3a823418-9df5-4d11-ab89-93d19cc9b296</string>
+</dict>
+</plist>

@@ -1,0 +1,583 @@
+%YAML 1.2
+---
+# See http://www.sublimetext.com/docs/3/syntax.html
+name: 'Debugfile'
+file_extensions:
+  - dbg
+first_line_match: '^[ \t]@debugfile[ \t]'
+scope: source.debugfile
+
+# Based on spec version 0.4.1
+
+variables:
+  ws: '[ \t]' # Whitespace (§3.2)
+  bol: '^{{ws}}*' # Beginning Of Line (ignored during step 2 of §3.2)
+
+  ident: '(?:[A-Za-z_]{{ident_inner}}*)' # Identifier (§4.3)
+  ident_inner: '[A-Za-z0-9$.@_]'
+  eot: '(?!{{ident_inner}})' # End Of Token
+
+  emu_name: '[A-Za-z][A-Za-z0-9!#$%&*+.?@_-]{0,49}' # §3.5
+  emu_ver: '[0-9][A-Za-z0-9!#$%&*+.?@_-]{0,49}' # §3.5
+
+contexts:
+  prototype:
+    - match: '{{bol}}(?=;)'
+      push:
+        - match: ';' # Should match right away, obviously
+          scope: punctuation.definition.comment.begin.debugfile
+          set:
+            - meta_scope: comment.line.semi-colon.debugfile
+            - include: eol-pop
+
+  main:
+    - match: '{{bol}}((@)debugfile){{eot}}'
+      captures:
+        1: keyword.context.resource.debugfile
+        2: punctuation.definition.keyword.begin.debugfile
+      push:
+        - debugfile
+        - expect-eol
+        - expect-debugfile-ver
+
+  debugfile:
+    # Private-use lines
+    - match: '{{bol}}(@@)'
+      captures:
+        1: punctuation.definition.keyword.begin.debugfile
+      push:
+        - meta_scope: meta.private-use.debugfile
+        - include: eol-pop
+    - include: identification-directives
+    - include: conditional-inclusion-directives
+    - include: declaration-directives
+    - include: action-group-directives
+    - include: included-file-directives
+    - include: configuration-directives
+    - include: misc-directives
+    # This is for a completion trigger, and works because no constant address expression can contain variables
+    - match: '{{bol}}(@[^{{ws}}]*)'
+      captures:
+        1: meta.tentative-directive.debugfile
+      push: eol-pop
+    - include: actions # Must be last, as it is a catch-all
+
+  ## 4.1. Identification
+  identification-directives:
+    - match: '{{bol}}((@)debugfile){{eot}}'
+      captures:
+        1: keyword.context.resource.debugfile
+        2: punctuation.definition.keyword.begin.debugfile
+      push:
+        - expect-eol
+        - expect-debugfile-ver
+
+  expect-debugfile-ver:
+    - match: '[0-9](?:[0-9.]{0,18}[0-9])?' # §4.1
+      scope: constant.numeric.version.debugfile
+      pop: true
+    - include: else-pop
+    - include: eol-pop
+
+  ## 4.2. Conditional inclusion
+  conditional-inclusion-directives:
+    - match: '{{bol}}((@)always){{eot}}'
+      captures:
+        1: keyword.control.conditional.end.debugfile
+        2: punctuation.definition.keyword.begin.debugfile
+      push: expect-eol
+    - match: '{{bol}}((@)ifemu){{eot}}'
+      captures:
+        1: keyword.control.conditional.if.debugfile
+        2: punctuation.definition.keyword.begin.debugfile
+      push: expect-emu-spec-list
+    - match: '{{bol}}((@)ifnotemu){{eot}}'
+      captures:
+        1: keyword.control.conditional.if.debugfile
+        2: punctuation.definition.keyword.begin.debugfile
+      push: expect-emu-spec-list
+    - match: '{{bol}}((@)else){{eot}}'
+      captures:
+        1: keyword.control.conditional.else.debugfile
+        2: punctuation.definition.keyword.begin.debugfile
+      push: expect-eol
+
+  expect-emu-spec-list:
+    - match: '{{emu_name}}'
+      scope: string.unquoted.emulator-name.debugfile
+      set:
+        - match: '{{emu_ver}}'
+          scope: constant.numeric.version.debugfile
+          set: next-emu-spec
+        - include: comparison-operator-or-next # Includes `next-emu-spec`
+    - include: else-pop
+    - include: eol-pop
+
+  expect-emu-ver:
+    - match: '{{emu_ver}}'
+      scope: constant.numeric.version.debugfile
+      pop: true
+    - include: else-pop
+    - include: eol-pop
+
+  comparison-operator-or-next:
+    - match: '[<>=]=?|<>|!='
+      scope: keyword.operator.comparison.debugfile
+      set:
+        - comparison-operator-or-next
+        - expect-emu-ver
+    - include: next-emu-spec
+
+  next-emu-spec:
+    - match: ','
+      scope: punctuation.separator.sequence.debugfile
+      set: expect-emu-spec-list
+    - include: else-pop
+    - include: eol-pop
+
+  ## 4.3. Declarations
+  declaration-directives:
+    - match: '{{bol}}((@)sym){{eot}}'
+      captures:
+        1: keyword.declaration.symbol.debugfile
+        2: punctuation.definition.keyword.begin.debugfile
+      push:
+        - expect-eol
+        - expect-expr
+        - expect-sym-def-name
+    - match: '{{bol}}((@)alias){{eot}}'
+      captures:
+        1: keyword.declaration.symbol.debugfile
+        2: punctuation.definition.keyword.begin.debugfile
+      push:
+        - expect-eol
+        - expect-str-noescapes
+        - expect-sym-def-name
+    - match: '{{bol}}((@)var){{eot}}'
+      captures:
+        1: keyword.declaration.variable.debugfile
+        2: punctuation.definition.keyword.begin.debugfile
+      push:
+        - expect-eol
+        - expect-expr
+        - expect-var-def-name
+    - match: '{{bol}}((@)str){{eot}}'
+      captures:
+        1: keyword.declaration.string.debugfile
+        2: punctuation.definition.keyword.begin.debugfile
+      push:
+        - expect-eol
+        - expect-str
+        - expect-str-def-name
+
+  expect-sym-def-name:
+    - match: '{{ident}}{{eot}}'
+      scope: entity.name.label.debugfile
+      pop: true
+    - include: else-pop
+    - include: eol-pop
+
+  expect-var-def-name:
+    - match: '(?=_){{ident}}{{eot}}'
+      scope: entity.name.variable.debugfile
+      pop: true
+    - match: '{{ident}}{{eot}}'
+      scope: entity.name.variable.debugfile invalid.deprecated.debugfile
+      pop: true
+    - include: else-pop
+    - include: eol-pop
+
+  expect-str-def-name:
+    - match: '{{ident}}{{eot}}'
+      scope: entity.name.constant.debugfile
+      pop: true
+    - include: else-pop
+    - include: eol-pop
+
+  ## 4.4. Action groups
+  action-group-directives:
+    - match: '{{bol}}((@)group){{eot}}'
+      captures:
+        1: keyword.declaration.group.debugfile
+        2: punctuation.definition.keyword.begin.debugfile
+      push:
+        - group
+        - expect-eol
+        - expect-str-noescapes
+        - expect-group-def-name
+    - match: '{{bol}}((@)endgroup){{eot}}'
+      captures:
+        1: keyword.other.debugfile
+        2: punctuation.definition.keyword.begin.debugfile
+      push: expect-eol
+
+  expect-group-def-name:
+    - match: '{{ident}}{{eot}}'
+      scope: entity.name.namespace.debugfile
+      pop: true
+    - include: else-pop
+    - include: eol-pop
+
+  group:
+    - match: '' # Don't propagate the `meta_content_scope` to calling context
+      set:
+        - meta_content_scope: meta.namespace.debugfile
+        - match: '(?={{bol}}@(?:end)?group{{eot}})'
+          pop: true
+        - include: debugfile
+
+  ## 4.5. Included files
+  included-file-directives:
+    - match: '{{bol}}((@)include){{eot}}'
+      captures:
+        1: keyword.control.import.include.debugfile
+        2: punctuation.definition.keyword.begin.debugfile
+      push:
+        - expect-eol
+        - expect-str-noescapes
+    - match: '{{bol}}((@)symfile){{eot}}'
+      captures:
+        1: keyword.control.import.symfile.debugfile
+        2: punctuation.definition.keyword.begin.debugfile
+      push:
+        - expect-eol
+        - expect-str-noescapes
+
+  ## 4.6. Configuration
+  configuration-directives:
+    - match: '{{bol}}((@)radix){{ws}}+(2|10|16)(?![0-9])'
+      captures:
+        1: keyword.other.radix.debugfile
+        2: punctuation.definition.keyword.begin.debugfile
+        3: constant.numeric.base.debugfile
+      push: expect-eol
+    - match: '{{bol}}((@)signedness){{ws}}+(1|0)(?![0-9])'
+      captures:
+        1: keyword.other.signedness.debugfile
+        2: punctuation.definition.keyword.begin.debugfile
+        3: constant.numeric.value.debugfile
+      push: expect-eol
+
+  ## 4.7. Miscellaneous
+  misc-directives:
+    - match: '{{bol}}((@)warning){{eot}}'
+      captures:
+        1: keyword.control.exception.warning.debugfile
+        2: punctuation.definition.keyword.begin.debugfile
+      push:
+        - expect-eol
+        - expect-str-noescapes
+    - match: '{{bol}}((@)error){{eot}}'
+      captures:
+        1: keyword.control.exception.error.debugfile
+        2: punctuation.definition.keyword.begin.debugfile
+      push:
+        - expect-eol
+        - expect-str-noescapes
+
+  ## 5. Actions
+  actions:
+    - match: '{{bol}}(?!{{ws}}|\n)'
+      push:
+        - commands
+        - expect-action-colon
+        - expect-expr
+        - expect-flags-subfield
+        - expect-addr-expr-list
+        - expect-addr-subfield-item
+
+  expect-addr-expr-list:
+    - match: ','
+      scope: punctuation.separator.sequence.debugfile
+      set:
+        - expect-addr-expr-list
+        - expect-addr-subfield-item
+    - match: ''
+      pop: true
+
+  expect-addr-subfield-item: # §5.5
+    - match: ''
+      set:
+        - expect-range-operator
+        - expect-addr-subfield-addr-expr
+
+  expect-addr-subfield-addr-expr:
+    - match: ''
+      set:
+        - include: expect-addr-expr
+      with_prototype:
+        - match: '(?={{ws}}|--|\+\+)'
+          pop: true
+
+  expect-range-operator:
+    - match: '--|\+\+'
+      scope: keyword.operator.range.debugfile
+      set: expect-expr
+      with_prototype:
+        - match: '(?={{ws}})'
+          pop: true
+    - match: '' # Bail if anything else matches (not even whitespace is allowed!)
+      pop: true
+
+  expect-flags-subfield: # §5.6
+    - match: '{{ws}}*'
+      set:
+        - match: '[rwx]|ww|xx'
+          scope: storage.type.debugfile
+        - match: '[sdmb]|ss|bb'
+          scope: storage.modifier.debugfile
+        - match: '(?={{ws}}|:)'
+          pop: true
+
+  expect-action-colon:
+    - match: ':'
+      scope: punctuation.separator.key-value.debugfile
+      pop: true
+    - include: else-pop
+    - include: eol-pop
+
+  commands: # §6
+    - include: basic-commands
+    - include: action-related-commands
+    - include: state-modification-commands
+    - include: control-flow-commands
+    - match: '\n' # Swallow newlines
+    - include: else-pop
+
+  basic-commands: # §6.1
+    - match: 'break{{eot}}'
+      scope: keyword.control.flow.break.debugfile
+      set: next-command
+    - match: 'reset{{eot}}'
+      scope: keyword.control.flow.throw.debugfile
+      set: next-command
+    - match: '(?:message|alert){{eot}}'
+      scope: keyword.operator.word.debugfile
+      set:
+        - next-command
+        - expect-msg
+
+  expect-msg:
+    - match: '{{ident}}{{eot}}'
+      pop: true
+    - include: expect-str
+
+  action-related-commands: # §6.2
+    - match: '(?:enable|disable|toggle){{eot}}'
+      scope: keyword.other.debugfile
+      set:
+        - match: '{{ident}}{{eot}}'
+          set: next-command
+        - include: else-pop
+        - include: eol-pop
+
+  state-modification-commands: # §6.3
+    - match: 'set{{eot}}'
+      scope: keyword.other.debugfile
+      set:
+        - next-command
+        - expect-expr
+        - expect-assignment-operator
+        - expect-lvalue
+
+  expect-assignment-operator:
+    - match: ':='
+      scope: keyword.operator.assignment.debugfile
+      pop: true
+    - include: else-pop
+    - include: eol-pop
+
+  control-flow-commands: # §6.4
+    - match: 'nop{{eot}}'
+      scope: keyword.other.debugfile
+      set: next-command
+    - match: 'done{{eot}}'
+      scope: keyword.control.flow.return.debugfile
+      set: next-command
+    - match: 'skip{{eot}}'
+      scope: keyword.control.flow.goto.debugfile
+      set: next-command
+    - match: 'if{{eot}}'
+      scope: keyword.control.conditional.if.debugfile
+      set:
+        - next-command
+        - expect-expr
+    - match: 'else{{eot}}'
+      scope: keyword.control.conditional.else.debugfile
+      set: next-command
+
+  next-command:
+    - match: ';'
+      scope: punctuation.separator.sequence.debugfile
+      set: commands
+    - include: expect-eol
+
+  ## Utility scopes
+
+  expect-expr: # §5.3
+    - match: '%[01]*+'
+      scope: constant.numeric.integer.binary.debugfile
+    - match: '#[0-9]+'
+      scope: constant.numeric.integer.decimal.debugfile
+    - match: '\$[0-9A-Fa-f]+'
+      scope: constant.numeric.integer.hexadecimal.debugfile
+    - match: '[0-9][0-9A-Fa-f]*'
+      scope: constant.numeric.integer.debugfile
+    # Put all 2-char operators first to simulate maximal munch
+    - match: '&&|\|\||\^\^'
+      scope: keyword.operator.logical.debugfile
+    - match: '\*\*'
+      scope: keyword.operator.arithmetic.debugfile
+    - match: '<<|>>'
+      scope: keyword.operator.bitwise.debugfile
+    - match: '[<>=]=?|<>|!=' # Cheating a bit (both 2- and 1-char), so last
+      scope: keyword.operator.comparison.debugfile
+    - match: '!'
+      scope: keyword.operator.logical.debugfile
+    - match: '[-+*/%]'
+      scope: keyword.operator.arithmetic.debugfile
+    - match: '[~&|^]'
+      scope: keyword.operator.bitwise.debugfile
+    - include: expect-lvalue
+
+  expect-lvalue:
+    - match: '(?=@?{{ident}}{{eot}}|@)' # Symbols, variables
+      push: expect-ident
+    - match: '\['
+      scope: punctuation.accessor.begin.debugfile punctuation.section.brackets.begin.debugfile
+      push:
+        - meta-brackets
+        - expect-closing-bracket
+        - expect-addr-expr
+    - include: else-pop
+    - include: eol-pop
+
+  expect-ident:
+    - match: '(@?)(?:[abcdehlf]|af|bc|de|hl|sp|pc|zf|cf|ime|rombank|srambank|sramenable|target|op|value){{eot}}'
+      scope: variable.language.debugfile
+      captures:
+        1: punctuation.definition.variable.begin.debugfile
+      pop: true
+    - match: '@{{eot}}'
+      scope: variable.language.debugfile
+      pop: true
+    - match: '(@?){{ident}}{{eot}}'
+      captures:
+        1: punctuation.definition.variable.begin.debugfile
+      pop: true
+    - include: else-pop
+    - include: eol-pop
+
+  meta-brackets:
+    - meta_scope: meta.brackets.debugfile
+    - match: ''
+      pop: true
+
+  expect-closing-bracket:
+    - match: '[!?]{0,2}\]'
+      scope: punctuation.accessor.end.debugfile punctuation.section.brackets.end.debugfile
+      pop: true
+    - include: else-pop
+    - include: eol-pop
+
+  expect-addr-expr:
+    - match: ''
+      set:
+        - expect-expr
+        - expect-addr-colon
+        - expect-expr
+
+  expect-addr-colon:
+    - match: ':'
+      scope: punctuation.separator.debugfile
+      pop: true
+    - include: else-pop
+    - include: eol-pop
+
+  expect-str-noescapes:
+    - match: '"'
+      scope: punctuation.definition.string.begin.debugfile
+      set:
+        - meta_scope: string.quoted.double.debugfile
+        - match: '{'
+          scope: invalid.illegal.debugfile
+        - match: '"'
+          scope: punctuation.definition.string.end.debugfile
+          pop: true
+        - include: eol-pop
+    - include: else-pop
+    - include: eol-pop
+
+  expect-str: # §7
+    - match: '"'
+      scope: punctuation.definition.string.begin.debugfile
+      set:
+        - meta_scope: string.quoted.double.debugfile
+        - match: '{:[cnoqt]}' # §7.5
+          scope: constant.character.escape.debugfile
+        - match: '{(?=[^"{}]*})' # §7.2
+          scope: punctuation.section.interpolation.begin.debugfile
+          push:
+            - meta-interpolation
+            - expect-closing-brace
+            - expect-interpolation-body
+            - expect-expr
+        - match: '{' # Unmatched
+          scope: invalid.illegal.debugfile
+        - match: '"'
+          scope: punctuation.definition.string.end.debugfile
+          pop: true
+        - include: eol-pop
+    - include: else-pop
+    - include: eol-pop
+
+  meta-interpolation:
+    - clear_scopes: 1 # Remove `string.*`
+    - meta_scope: meta.interpolation.debugfile
+    - match: ''
+      pop: true
+
+  expect-interpolation-body:
+    - match: '\?' # §7.4
+      scope: keyword.operator.ternary.debugfile
+      set:
+        - expect-ternary-else
+        - expect-str-name
+    - match: ':[0-9]*[#$%+-]?' # §7.3
+      scope: constant.other.format-spec.debugfile
+      pop: true
+    - include: else-pop
+    - include: eol-pop
+
+  expect-ternary-else:
+    - match: ':'
+      scope: keyword.operator.ternary.debugfile
+      set: expect-str-name
+    - include: else-pop
+    - include: eol-pop
+
+  expect-closing-brace:
+    - match: '}' # Guaranteed to match by calling context
+      scope: punctuation.section.interpolation.end.debugfile
+      pop: true
+
+  expect-str-name:
+    - match: '{{ident}}{{eot}}'
+      pop: true
+    - include: else-pop
+    - include: eol-pop
+
+  # For popping from the including context at EOL; use when unparsed (non-whitespace) content is normal
+  eol-pop:
+    - match: '{{ws}}*$\n?'
+      pop: true
+  # For popping from the including context at EOL; use when nothing else should be present until EOL
+  expect-eol:
+    - match: '(?:{{ws}}*[^{{ws}}\n]+)+'
+      scope: invalid.illegal.debugfile
+    - include: eol-pop
+
+  # For popping on the first unrecognized character
+  else-pop:
+    - match: '(?=[^{{ws}}])'
+      pop: true
