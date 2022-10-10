@@ -120,7 +120,7 @@ contexts:
       pop: true
 
   line-conts:
-    - match: '(\\)[ \t]*(;.+)?\n'
+    - match: '(\\)[ \t]*(;.+)?$\n?'
       captures:
         1: punctuation.separator.continuation.rgbds
         2: comment.line.semi-colon.rgbds
@@ -148,19 +148,23 @@ contexts:
         - include: comments
         - include: timid-macro-args
         - include: timid-interpolations
-        - meta_content_scope: entity.name.rgbds
-        - match: '\s+'
+        - match: '({{symbol_name}})\s+((?i:equs))(?!{{symbol_char}})'
+          captures:
+            1: entity.name.constant.rgbds
+            2: keyword.operator.assignment.rgbds keyword.operator.word.rgbds
           set:
-            - match: '(?i:equs)(?!{{symbol_char}})'
-              scope: keyword.operator.assignment.rgbds keyword.operator.word.rgbds
-              set:
-                - expect-eol
-                - expect-string
-            - match: '(?i:equ|rb|rw|rl)(?!{{symbol_char}})'
-              scope: keyword.operator.assignment.rgbds keyword.operator.word.rgbds
-              set:
-                - expect-eol
-                - expect-num-expression
+            - expect-eol
+            - expect-string
+        - match: '({{symbol_name}})\s+((?i:equ|rb|rw|rl))(?!{{symbol_char}})'
+          captures:
+            1: entity.name.constant.rgbds
+            2: keyword.operator.assignment.rgbds keyword.operator.word.rgbds
+          set:
+            - expect-eol
+            - expect-num-expression
+        - match: '{{symbol_name}}'
+          scope: entity.name.rgbds
+          set:
             - match: '(?:[-+*/%&|^]|<<|>>)?='
               scope: keyword.operator.assignment.rgbds
               set:
