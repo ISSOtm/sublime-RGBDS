@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
   <key>name</key>
-  <string>Symbols</string>
+  <string>Locals</string>
   <key>scope</key>
-  <string>source.debugfile entity.name.constant.symbol.debugfile, source.debugfile entity.name.variable.debugfile</string>
+  <string>source.debugfile entity.name.constant.local.debugfile</string>
   <key>settings</key>
   <dict>
     <key>showInSymbolList</key>
     <integer>1</integer>
     <key>showInIndexedSymbolList</key>
-    <integer>1</integer>
+    <integer>0</integer>
   </dict>
   <key>uuid</key>
-  <string>7de690ac-4e44-445b-b7e5-a5051714a86f</string>
+  <string>e6fc3d54-7ce3-4b8f-adda-b67e04357185</string>
 </dict>
 </plist>

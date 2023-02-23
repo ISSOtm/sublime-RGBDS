@@ -4,21 +4,21 @@
 name: 'Debugfile'
 file_extensions:
   - dbg
-first_line_match: '^[ \t]@debugfile[ \t]'
+first_line_match: '^[ \t]*@debugfile[ \t]'
 scope: source.debugfile
 
-# Based on spec version 0.4.1
+# Based on spec version 1.0.0
 
 variables:
   ws: '[ \t]' # Whitespace (§3.2)
   bol: '^{{ws}}*' # Beginning Of Line (ignored during step 2 of §3.2)
 
   ident: '(?:[A-Za-z_]{{ident_inner}}*)' # Identifier (§4.3)
-  ident_inner: '[A-Za-z0-9$.@_]'
+  ident_inner: '[A-Za-z0-9$#.@_]'
   eot: '(?!{{ident_inner}})' # End Of Token
 
-  emu_name: '[A-Za-z][A-Za-z0-9!#$%&*+.?@_-]{0,49}' # §3.5
-  emu_ver: '[0-9][A-Za-z0-9!#$%&*+.?@_-]{0,49}' # §3.5
+  emu_name: '[A-Za-z][A-Za-z0-9#$%&*+.?@_-]{0,49}' # §3.5
+  emu_ver:     '[0-9][A-Za-z0-9#$%&*+.?@_-]{0,49}' # §3.5
 
 contexts:
   prototype:
@@ -46,29 +46,35 @@ contexts:
       captures:
         1: punctuation.definition.keyword.begin.debugfile
       push:
-        - meta_scope: meta.private-use.debugfile
+        - meta_scope: meta.annotation.private-use.debugfile
         - include: eol-pop
-    - include: identification-directives
-    - include: conditional-inclusion-directives
-    - include: declaration-directives
-    - include: action-group-directives
-    - include: included-file-directives
-    - include: configuration-directives
-    - include: misc-directives
-    # This is for a completion trigger, and works because no constant address expression can contain variables
-    - match: '{{bol}}(@[^{{ws}}]*)'
+    - match: '{{bol}}(@)'
       captures:
-        1: meta.tentative-directive.debugfile
-      push: eol-pop
+        1: punctuation.definition.keyword.begin.debugfile
+      push:
+        - meta_scope: meta.annotation.debugfile
+        - include: identification-directives
+        - include: conditional-inclusion-directives
+        - include: declaration-directives
+        - include: action-group-directives
+        - include: included-file-directives
+        - include: configuration-directives
+        - include: misc-directives
+        # This is for a completion trigger, and works because no constant address expression can contain variables
+        - match: ''
+          set:
+            - eol-pop
+            - meta-tentative-directive
     - include: actions # Must be last, as it is a catch-all
+
+  meta-tentative-directive:
+    - meta_scope: meta.tentative-directive.debugfile
 
   ## 4.1. Identification
   identification-directives:
-    - match: '{{bol}}((@)debugfile){{eot}}'
-      captures:
-        1: keyword.context.resource.debugfile
-        2: punctuation.definition.keyword.begin.debugfile
-      push:
+    - match: 'debugfile{{eot}}'
+      scope: keyword.context.resource.debugfile
+      set:
         - expect-eol
         - expect-debugfile-ver
 
@@ -81,26 +87,35 @@ contexts:
 
   ## 4.2. Conditional inclusion
   conditional-inclusion-directives:
-    - match: '{{bol}}((@)always){{eot}}'
-      captures:
-        1: keyword.control.conditional.end.debugfile
-        2: punctuation.definition.keyword.begin.debugfile
-      push: expect-eol
-    - match: '{{bol}}((@)ifemu){{eot}}'
-      captures:
-        1: keyword.control.conditional.if.debugfile
-        2: punctuation.definition.keyword.begin.debugfile
-      push: expect-emu-spec-list
-    - match: '{{bol}}((@)ifnotemu){{eot}}'
-      captures:
-        1: keyword.control.conditional.if.debugfile
-        2: punctuation.definition.keyword.begin.debugfile
-      push: expect-emu-spec-list
-    - match: '{{bol}}((@)else){{eot}}'
-      captures:
-        1: keyword.control.conditional.else.debugfile
-        2: punctuation.definition.keyword.begin.debugfile
-      push: expect-eol
+    - match: 'always{{eot}}'
+      scope: keyword.control.conditional.end.debugfile
+      set: expect-eol
+    - match: 'if{{eot}}'
+      scope: keyword.control.conditional.if.debugfile
+      set:
+        - expect-eol
+        - expect-expr
+    - match: 'ifdef{{eot}}'
+      scope: keyword.control.conditional.if.debugfile
+      set:
+        - expect-eol
+        - expect-ident
+    - match: 'ifemu{{eot}}'
+      scope: keyword.control.conditional.if.debugfile
+      set: expect-emu-spec-list
+    - match: 'ifnotdef{{eot}}'
+      scope: keyword.control.conditional.if.debugfile
+      set:
+        - expect-eol
+        - expect-ident
+    - match: 'ifnotemu{{eot}}'
+      scope: keyword.control.conditional.if.debugfile
+      set: expect-emu-spec-list
+    - match: 'else{{eot}}'
+      scope: keyword.control.conditional.else.debugfile
+      set:
+        - include: conditional-inclusion-directives
+        - include: else-pop
 
   expect-emu-spec-list:
     - match: '{{emu_name}}'
@@ -137,42 +152,47 @@ contexts:
 
   ## 4.3. Declarations
   declaration-directives:
-    - match: '{{bol}}((@)sym){{eot}}'
-      captures:
-        1: keyword.declaration.symbol.debugfile
-        2: punctuation.definition.keyword.begin.debugfile
-      push:
+    - match: 'sym{{eot}}'
+      scope: keyword.declaration.symbol.debugfile
+      set:
         - expect-eol
         - expect-expr
         - expect-sym-def-name
-    - match: '{{bol}}((@)alias){{eot}}'
-      captures:
-        1: keyword.declaration.symbol.debugfile
-        2: punctuation.definition.keyword.begin.debugfile
-      push:
+    - match: 'local{{eot}}'
+      scope: keyword.declaration.symbol.debugfile
+      set:
+        - expect-eol
+        - expect-expr
+        - expect-local-def-name
+    - match: 'alias{{eot}}'
+      scope: keyword.declaration.symbol.debugfile
+      set:
         - expect-eol
         - expect-str-noescapes
-        - expect-sym-def-name
-    - match: '{{bol}}((@)var){{eot}}'
-      captures:
-        1: keyword.declaration.variable.debugfile
-        2: punctuation.definition.keyword.begin.debugfile
-      push:
+        - expect-local-def-name
+    - match: 'var{{eot}}'
+      scope: keyword.declaration.variable.debugfile
+      set:
         - expect-eol
         - expect-expr
         - expect-var-def-name
-    - match: '{{bol}}((@)str){{eot}}'
-      captures:
-        1: keyword.declaration.string.debugfile
-        2: punctuation.definition.keyword.begin.debugfile
-      push:
+    - match: 'str{{eot}}'
+      scope: keyword.declaration.string.debugfile
+      set:
         - expect-eol
         - expect-str
         - expect-str-def-name
 
   expect-sym-def-name:
     - match: '{{ident}}{{eot}}'
-      scope: entity.name.label.debugfile
+      scope: entity.name.constant.symbol.debugfile
+      pop: true
+    - include: else-pop
+    - include: eol-pop
+
+  expect-local-def-name:
+    - match: '{{ident}}{{eot}}'
+      scope: entity.name.constant.local.debugfile
       pop: true
     - include: else-pop
     - include: eol-pop
@@ -196,20 +216,16 @@ contexts:
 
   ## 4.4. Action groups
   action-group-directives:
-    - match: '{{bol}}((@)group){{eot}}'
-      captures:
-        1: keyword.declaration.group.debugfile
-        2: punctuation.definition.keyword.begin.debugfile
-      push:
+    - match: 'group{{eot}}'
+      scope: keyword.declaration.group.debugfile
+      set:
         - group
         - expect-eol
         - expect-str-noescapes
         - expect-group-def-name
-    - match: '{{bol}}((@)endgroup){{eot}}'
-      captures:
-        1: keyword.other.debugfile
-        2: punctuation.definition.keyword.begin.debugfile
-      push: expect-eol
+    - match: 'endgroup{{eot}}'
+      scope: keyword.other.debugfile
+      set: expect-eol
 
   expect-group-def-name:
     - match: '{{ident}}{{eot}}'
@@ -228,50 +244,44 @@ contexts:
 
   ## 4.5. Included files
   included-file-directives:
-    - match: '{{bol}}((@)include){{eot}}'
-      captures:
-        1: keyword.control.import.include.debugfile
-        2: punctuation.definition.keyword.begin.debugfile
-      push:
+    - match: 'include{{eot}}'
+      scope: keyword.control.import.include.debugfile
+      set:
         - expect-eol
         - expect-str-noescapes
-    - match: '{{bol}}((@)symfile){{eot}}'
-      captures:
-        1: keyword.control.import.symfile.debugfile
-        2: punctuation.definition.keyword.begin.debugfile
-      push:
+    - match: 'symfile{{eot}}'
+      scope: keyword.control.import.symfile.debugfile
+      set:
         - expect-eol
         - expect-str-noescapes
 
   ## 4.6. Configuration
   configuration-directives:
-    - match: '{{bol}}((@)radix){{ws}}+(2|10|16)(?![0-9])'
-      captures:
-        1: keyword.other.radix.debugfile
-        2: punctuation.definition.keyword.begin.debugfile
-        3: constant.numeric.base.debugfile
-      push: expect-eol
-    - match: '{{bol}}((@)signedness){{ws}}+(1|0)(?![0-9])'
-      captures:
-        1: keyword.other.signedness.debugfile
-        2: punctuation.definition.keyword.begin.debugfile
-        3: constant.numeric.value.debugfile
-      push: expect-eol
+    - match: 'radix{{eot}}'
+      scope: keyword.other.radix.debugfile
+      set:
+        - match: (?:2|10|16)(?!0-9)
+          scope: constant.numeric.base.debugfile
+          set: expect-eol
+        - include: else-pop
+    - match: 'signedness{{eot}}'
+      scope: keyword.other.signedness.debugfile
+      set:
+        - match: (?:un)?signed{{eot}}
+          scope: constant.language.boolean.debugfile
+          set: expect-eol
+        - include: else-pop
 
   ## 4.7. Miscellaneous
   misc-directives:
-    - match: '{{bol}}((@)warning){{eot}}'
-      captures:
-        1: keyword.control.exception.warning.debugfile
-        2: punctuation.definition.keyword.begin.debugfile
-      push:
+    - match: 'warning{{eot}}'
+      scope: keyword.control.exception.warning.debugfile
+      set:
         - expect-eol
         - expect-str-noescapes
-    - match: '{{bol}}((@)error){{eot}}'
-      captures:
-        1: keyword.control.exception.error.debugfile
-        2: punctuation.definition.keyword.begin.debugfile
-      push:
+    - match: 'error{{eot}}'
+      scope: keyword.control.exception.error.debugfile
+      set:
         - expect-eol
         - expect-str-noescapes
 
@@ -328,6 +338,9 @@ contexts:
           scope: storage.modifier.debugfile
         - match: '(?={{ws}}|:)'
           pop: true
+        - match: '[^{{ws}}]'
+          scope: invalid.illegal.debugfile
+        - include: eol-pop
 
   expect-action-colon:
     - match: ':'
@@ -379,6 +392,11 @@ contexts:
         - expect-expr
         - expect-assignment-operator
         - expect-lvalue
+    - match: 'jump{{eot}}'
+      scope: keyword.control.flow.goto.debugfile
+      set:
+        - next-command
+        - expect-addr-expr
 
   expect-assignment-operator:
     - match: ':='
@@ -415,6 +433,8 @@ contexts:
   ## Utility scopes
 
   expect-expr: # §5.3
+    - match: '(?=[!?]{0,2}\^?\])' # This is required to properly highlight bracket expr modifiers
+      pop: true
     - match: '%[01]*+'
       scope: constant.numeric.integer.binary.debugfile
     - match: '#[0-9]+'
@@ -438,6 +458,14 @@ contexts:
       scope: keyword.operator.arithmetic.debugfile
     - match: '[~&|^]'
       scope: keyword.operator.bitwise.debugfile
+    - match: '\('
+      scope: punctuation.section.parens.begin.debugfile
+      push:
+        - meta_scope: meta.parens.debugfile
+        - match: '\)'
+          scope: punctuation.section.parens.end.debugfile
+          pop: true
+        - include: expect-expr
     - include: expect-lvalue
 
   expect-lvalue:
@@ -449,17 +477,17 @@ contexts:
         - meta-brackets
         - expect-closing-bracket
         - expect-addr-expr
+    - match: '&'
+      scope: keyword.operator.bank.debugfile
+      set: expect-expr
     - include: else-pop
     - include: eol-pop
 
   expect-ident:
-    - match: '(@?)(?:[abcdehlf]|af|bc|de|hl|sp|pc|zf|cf|ime|rombank|srambank|sramenable|target|op|value){{eot}}'
+    - match: '(@?)(?:[abcdehlf]|af|bc|de|hl|sp|pc|zf|cf|nf|hf|ime|sram|target|op|value){{eot}}'
       scope: variable.language.debugfile
       captures:
         1: punctuation.definition.variable.begin.debugfile
-      pop: true
-    - match: '@{{eot}}'
-      scope: variable.language.debugfile
       pop: true
     - match: '(@?){{ident}}{{eot}}'
       captures:
@@ -474,8 +502,10 @@ contexts:
       pop: true
 
   expect-closing-bracket:
-    - match: '[!?]{0,2}\]'
-      scope: punctuation.accessor.end.debugfile punctuation.section.brackets.end.debugfile
+    - match: '([!?]{0,2}\^?)(\])'
+      captures:
+        1: storage.modifier.debugfile
+        2: punctuation.accessor.end.debugfile punctuation.section.brackets.end.debugfile
       pop: true
     - include: else-pop
     - include: eol-pop
@@ -538,21 +568,17 @@ contexts:
       pop: true
 
   expect-interpolation-body:
-    - match: '\?' # §7.4
-      scope: keyword.operator.ternary.debugfile
-      set:
-        - expect-ternary-else
-        - expect-str-name
-    - match: ':[0-9]*[#$%+-]?' # §7.3
+    - match: ',[ \t]*[0-9]{0,2}[#$%+-]?' # §7.3
       scope: constant.other.format-spec.debugfile
       pop: true
-    - include: else-pop
-    - include: eol-pop
+    - include: expect-selection-interpolation
 
-  expect-ternary-else:
-    - match: ':'
-      scope: keyword.operator.ternary.debugfile
-      set: expect-str-name
+  expect-selection-interpolation:
+    - match: ':' # §7.4
+      scope: keyword.operator.selection.debugfile
+      set:
+        - expect-selection-interpolation
+        - expect-str-name
     - include: else-pop
     - include: eol-pop
 
@@ -579,5 +605,6 @@ contexts:
 
   # For popping on the first unrecognized character
   else-pop:
+    - match: '{{ws}}+'
     - match: '(?=[^{{ws}}])'
       pop: true
