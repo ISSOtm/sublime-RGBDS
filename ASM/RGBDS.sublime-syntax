@@ -120,6 +120,7 @@ contexts:
 
   line-conts:
     - match: '(\\)[ \t]*(;.+)?$\n?'
+      scope: invalid.deprecated.rgbds
       captures:
         1: punctuation.separator.continuation.rgbds
         2: comment.line.semi-colon.rgbds

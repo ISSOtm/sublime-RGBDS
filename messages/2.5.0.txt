@@ -1,0 +1,8 @@
+Sublime-RGBDS 2.5.0 changelog:
+
+ - Updated all syntaxes for RGBDS v0.7.0
+ - Updated debugfile syntax for v1.0.0
+ - Fixed some bugs (syntax not properly recognised)
+
+If you would like to help, some of GBDev's projects are open for help.
+Please contact me (https://eldred.fr/about)!
