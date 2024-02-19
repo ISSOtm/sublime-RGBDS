@@ -8,16 +8,9 @@ scope: source.linkerscript
 
 contexts:
   prototype:
-    - include: comments
+    - include: comment
 
-
-  main:
-    - include: banks
-    - include: commands
-    - include: sections
-
-
-  comments:
+  comment:
     - match: ';'
       scope: punctuation.definition.comment.linkerscript
       push:
@@ -27,44 +20,106 @@ contexts:
           pop: true
 
 
-  strings:
+  main:
+    - include: bank
+    - include: directive
+    - include: section
+
+  bank:
+    - match: '\b(?i:ROM0|WRAM0|OAM|HRAM)\b'
+      scope: storage.type.linkerscript
+      push: expect-eol
+    - match: '\b(?i:ROMX|[VS]RAM|WRAMX)\b'
+      scope: storage.type.linkerscript
+      push:
+        - eol-pop
+        - number
+
+  directive:
+    - match: '\b(?i:INCLUDE)\b'
+      scope: keyword.import.linkerscript
+      push:
+        - eol-pop
+        - expect-string
+    - match: '\b(?i:FLOATING)\b'
+      scope: storage.type.linkerscript
+      push: expect-eol
+    - match: '\b(?i:ORG)\b'
+      scope: keyword.control.flow.goto.linkerscript
+      push:
+        - expect-eol
+        - expect-number
+    - match: '\b(?i:ALIGN)\b'
+      scope: keyword.control.flow.linkerscript
+      push:
+        - expect-eol
+        - optional-comma-number
+        - expect-number
+    - match: '\b(?i:DS)\b'
+      scope: keyword.other.linkerscript
+      push:
+        - expect-eol
+        - expect-number
+
+  section:
+    - match: '(?=")'
+      push:
+        - expect-eol
+        - maybe-optional
+        - string
+
+  maybe-optional:
+    - match: '\b(?i:OPTIONAL)\b'
+      scope: storage.modifier.linkerscript
+      pop: true
+    - include: else-pop
+
+
+  optional-comma-number:
+    - match: ','
+      scope: punctuation.separator.linkerscript
+      set: expect-number
+    - include: else-pop
+
+  expect-string:
+    - include: string
+    - include: eol-pop
+  string:
     - match: '"'
       scope: punctuation.definition.string.begin.linkerscript
-      push:
+      set:
         - meta_include_prototype: false
         - meta_scope: string.quoted.double.linkerscript
         - match: '"'
           scope: punctuation.definition.string.end.linkerscript
           pop: true
+        - include: eol-pop
 
-
-  numbers:
+  expect-number:
+    - include: number
+    - include: eol-pop
+  number:
     - match: '[0-9]+'
       scope: constant.numeric.integer.decimal.linkerscript
+      pop: true
     - match: '\$[0-9a-fA-F]+'
       scope: constant.numeric.integer.hexadecimal.linkerscript
-
-
-  arguments:
-    - include: numbers
-    - match: (?=\n)
+      pop: true
+    - match: '%[01]+'
+      scope: constant.numeric.integer.binary.linkerscript
       pop: true
 
 
-  banks:
-    - match: '(rom0|ROM0|romx|ROMX|vram|VRAM|sram|SRAM|wram0|WRAM0|wramx|WRAMX|oam|OAM|hram|HRAM)'
-      scope: storage.modifier.linkerscript
-      push: arguments
+  else-pop:
+    - match: '(?=\S)'
+      pop: true
+    - include: eol-pop
 
+  eol-pop:
+    - match: '$\n?'
+      pop: true
 
-  commands:
-    - match: '(org|ORG|align|ALIGN)'
-      scope: keyword.operator.word.linkerscript
-      push: arguments
-    - match: '(include|INCLUDE)'
-      scope: keyword.control.import.linkerscript
-      push: strings
-
-
-  sections:
-    - include: strings
+  expect-eol:
+    - match: '[^\s;]+'
+      scope: invalid.illegal.linkerscript
+    - include: eol-pop

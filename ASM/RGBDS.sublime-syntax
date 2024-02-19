@@ -8,7 +8,6 @@ file_extensions:
   - rgbasm
   - inc
 scope: source.rgbds
-version: 2
 
 variables:
   symbol_first_char: '[a-zA-Z_]'
@@ -132,13 +131,6 @@ contexts:
 
 
   directive:
-    - match: '^({{symbol_name}})\s+((?i:equs))'
-      captures:
-        1: entity.name.constant.rgbds
-        2: keyword.operator.assignment.rgbds keyword.operator.word.rgbds
-      push:
-        - expect-eol
-        - expect-string
     - match: '^\s*(?i:(def)|(redef))(?!{{symbol_char}})\s+'
       captures:
         1: keyword.declaration.def.rgbds
@@ -172,20 +164,6 @@ contexts:
                 - expect-num-expression
             - include: eol-pop
         - include: eol-pop
-    - match: '^({{symbol_name}})\s+((?i:equ|rb|rw|rl))'
-      captures:
-        1: entity.name.constant.rgbds
-        2: keyword.operator.assignment.rgbds keyword.operator.word.rgbds
-      push:
-        - expect-eol
-        - expect-num-expression
-    - match: '^({{symbol_name}})\s+((?:[-+*/%&|^]|<<|>>)?=)'
-      captures:
-        1: entity.name.rgbds
-        2: keyword.operator.assignment.rgbds
-      push:
-        - expect-eol
-        - expect-num-expression
 
     - match: '\b(?i:if)\b'
       scope: keyword.control.conditional.if.rgbds
@@ -283,36 +261,36 @@ contexts:
     # Instructions without args
     - match: '\b(?i:ccf|cpl|daa|di|ei|halt|nop|reti|rla|rlca|rra|rrca|scf)\b'
       scope: variable.function.instruction.rgbds
-      push: expect-eol
+      push: more-cpu-instr
     # Instructions accepting a single reg8
     - match: '\b(?i:rl|rlc|rr|rrc|sla|sra|srl|swap)\b'
       scope: variable.function.instruction.rgbds
       push:
-        - expect-eol
+        - more-cpu-instr
         - expect-reg8
     # Instructions accepting a single reg16
     - match: '\b(?i:push|pop)\b'
       scope: variable.function.instruction.rgbds
       push:
-        - expect-eol
+        - more-cpu-instr
         - expect-reg16
     # Instructions accepting either a single reg8 or reg16
     - match: '\b(?i:dec|inc)\b'
       scope: variable.function.instruction.rgbds
       push:
-        - expect-eol
+        - more-cpu-instr
         - expect-decinc-lhs
     # Instructions accepting a single (perhaps optional) expression
     - match: '\b(?i:rst|stop)\b'
       scope: variable.function.instruction.rgbds
       push:
-        - expect-eol
+        - more-cpu-instr
         - expect-num-expression # Intentionally optional
     # Instructions accepting a single expression, then a single reg8
     - match: '\b(?i:bit|res|set)\b'
       scope: variable.function.instruction.rgbds
       push:
-        - expect-eol
+        - more-cpu-instr
         - expect-reg8
         - expect-comma
         - expect-num-expression
@@ -320,49 +298,49 @@ contexts:
     - match: '\b(?i:ret)\b'
       scope: variable.function.instruction.rgbds
       push:
-        - expect-eol
+        - more-cpu-instr
         - expect-ret-cond
     # Instructions accepting a single optional condition, then a single expression
     - match: '\b(?i:call|jr)\b'
       scope: variable.function.instruction.rgbds
       push:
-        - expect-eol
+        - more-cpu-instr
         - expect-jump-ops
     # Like the above, but `jp hl` is a special case
     - match: '\b(?i:jp)\b'
       scope: variable.function.instruction.rgbds
       push:
-        - expect-eol
+        - more-cpu-instr
         - expect-jp-ops
     # Instructions optionally accepting register a, then either a single reg8 or a single expression
     - match: '\b(?i:adc|and|cp|or|sbc|sub|xor)\b'
       scope: variable.function.instruction.rgbds
       push:
-        - expect-eol
+        - more-cpu-instr
         - expect-accumulator-ops
     # `add` is almost the same as the above, except for `add hl, reg16`
     - match: '\b(?i:add)\b'
       scope: variable.function.instruction.rgbds
       push:
-        - expect-eol
+        - more-cpu-instr
         - expect-add-ops
     # Instructions accepting register a, then register hl; or the reverse
     - match: '\b(?i:ldd|ldi)\b'
       scope: variable.function.instruction.rgbds
       push:
-        - expect-eol
+        - more-cpu-instr
         - expect-ldd-ops
     # Instructions accepting register a, then a memory target; or the reverse
     - match: '\b(?i:ldh|ldio)\b'
       scope: variable.function.instruction.rgbds
       push:
-        - expect-eol
+        - more-cpu-instr
         - expect-ldh-ops
     # `ld`... kinda does its own thing
     - match: '\b(?i:ld)\b'
       scope: variable.function.instruction.rgbds
       push:
-        - expect-eol
+        - more-cpu-instr
         - expect-ld-ops
 
   expect-decinc-lhs:
@@ -693,13 +671,20 @@ contexts:
       set: expect-num-expression
 
 
+  more-cpu-instr:
+    - match: '::'
+      scope: punctuation.separator.sequence.rgbds
+      set: cpu-instr
+    - include: expect-eol
+
+
 
   macro-call:
     - match: '{{symbol_name}}'
       scope: variable.function.rgbds
       push:
         - meta_scope: meta.function-call.macro.rgbds
-        - match: '\\,' # Escaped commas do not separate macro args
+        - match: '\\[,;{}]' # In particukar, escaped commas do not separate macro args.
           scope: constant.character.escape.rgbds
         - include: parens-macro-arg # Parens auto-escape macro args
         - match: ','
@@ -710,6 +695,10 @@ contexts:
               pop: true
         - match: '"'
           push:
+            - match: '\\["{}\\]' # In particular, do not consider escaped quotes.
+              scope: constant.character.escape.rgbds
+            - match: ';' # Within quotes, these aren't comments.
+              meta_include_prototype: false
             - match: '"'
               pop: true
             - include: eol-pop
@@ -751,15 +740,20 @@ contexts:
       push:
         - expect-eol
         - expect-expr-list
+        - expect-ds-align
     - match: '\b(?i:section)\b'
       scope: keyword.declaration.section.rgbds
       push:
         - expect-eol
         - expect-section-attrs
-        - expect-section-type-org
+        - expect-section-org
+        - expect-section-type
         - expect-comma
         - expect-string
         - expect-section-modifier
+    - match: '\b(?i:endsection)\b'
+      scope: keyword.other.rgbds
+      push: expect-eol
     - match: '\b(?i:rsreset)\b'
       scope: keyword.other.rgbds
       push: expect-eol
@@ -794,12 +788,14 @@ contexts:
       scope: keyword.declaration.charmap.rgbds
       push:
         - expect-eol
-        - expect-string
+        - expect-ident
+        - expect-comma
+        - expect-ident-defining
     - match: '\b(?i:setcharmap)\b'
       scope: keyword.context.resource.charmap.rgbds
       push:
         - expect-eol
-        - expect-string
+        - expect-ident
     - match: '\b(?i:pushc|popc)\b'
       scope: keyword.other.rgbds
       push: expect-eol
@@ -808,7 +804,8 @@ contexts:
       push:
         - expect-eol
         - expect-section-attrs
-        - expect-section-type-org-not-rom
+        - expect-section-org
+        - expect-section-type-not-rom
         - expect-comma
         - expect-string
         - expect-section-modifier-not-fragment
@@ -879,6 +876,17 @@ contexts:
       set:
         - expect-symbol-list_
         - expect-symbol
+    - include: else-pop
+
+  expect-ds-align:
+    - match: '\b(?i:align)\b'
+      scope: keyword.other.align.rgbds
+      set:
+        - expect-comma
+        - expect-closing-bracket
+        - expect-optional-expression
+        - expect-num-expression
+        - expect-opening-bracket
     - include: else-pop
 
   expect-expr-list:
@@ -960,12 +968,12 @@ contexts:
         1: keyword.other.rgbds
         2: constant.numeric.integer.decimal.rgbds
       set: expect-after-opt
-    - match: 'W[^,]*'
+    - match: 'W[^\s,;]*'
       scope: variable.parameter.option.shell
       set: expect-after-opt
     - include: expect-after-opt
   expect-after-opt:
-    - match: '[^\s,]+'
+    - match: '[^\s,;]+'
       scope: invalid.illegal.rgbds
     - include: else-pop
 
@@ -986,17 +994,17 @@ contexts:
       pop: true
     - include: else-pop
 
-  expect-section-type-org:
+  expect-section-type:
     - meta_content_scope: meta.annotation.parameters.section-type.rgbds
     - match: '\b(?i:rom0|romx)\b'
       scope: storage.type.section.rgbds
-      set: expect-section-org
-    - include: expect-section-type-org-not-rom
-  expect-section-type-org-not-rom:
+      pop: true
+    - include: expect-section-type-not-rom
+  expect-section-type-not-rom:
     - meta_content_scope: meta.annotation.parameters.section-type.rgbds
     - match: '\b(?i:vram|sram|wram0|wramx|oam|hram)\b'
       scope: storage.type.section.rgbds
-      set: expect-section-org
+      pop: true
     - include: else-pop
   expect-section-org:
     - match: '\['
@@ -1119,6 +1127,14 @@ contexts:
       pop: true
     - include: else-pop
 
+  expect-string-args:
+    - match: '(?=#?")'
+      set:
+        - expect-string-args
+        - expect-comma
+        - expect-string
+    - include: else-pop
+
 
   expect-num-expression:
     - include: num-expression
@@ -1139,7 +1155,7 @@ contexts:
     - match: '%[01][01_]*\b'
       scope: constant.numeric.integer.binary.rgbds
     # Strings are implicitly charmap-converted
-    - match: '(?i:(?="|strupr|strlwr|charsub|strsub|strrpl|strcat|strfmt))'
+    - match: '(?i:(?=#?"|strupr|strlwr|charsub|strsub|strrpl|strcat|strfmt))'
       push: string
     # FIXME: We don't support arbitrary characters (`-g`)
     - match: '`[0123]+\b'
@@ -1200,7 +1216,7 @@ contexts:
         - expect-arg-begin
     # String built-ins
     # Unary string
-    - match: '\b(?i:charlen|strlen)\b'
+    - match: '\b(?i:charlen|incharmap|strlen)\b'
       scope: support.function.string.rgbds
       push:
         - meta-func-call
@@ -1217,6 +1233,14 @@ contexts:
         - expect-comma
         - expect-string
         - expect-arg-begin
+    # N-ary string
+    - match: '\b(?i:strcat)\b'
+      scope: support.function.string.rgbds
+      push:
+        - meta-func-call
+        - expect-arg-end
+        - expect-string-args
+        - expect-arg-begin
     # "Other" builtins
     - match: '\b(?i:bank)\b'
       scope: support.function.bank.rgbds
@@ -1230,7 +1254,7 @@ contexts:
       push:
         - meta-func-call
         - expect-arg-end
-        - expect-string
+        - expect-string-or-sect-type
         - expect-arg-begin
     - match: '\b(?i:def)\b'
       scope: support.function.def.rgbds
@@ -1257,6 +1281,10 @@ contexts:
     - include: string
     - include: expect-symbol
 
+  expect-string-or-sect-type:
+    - include: string
+    - include: expect-section-type
+
   expect-string:
     - include: string
     - include: else-pop
@@ -1280,6 +1308,26 @@ contexts:
         - include: string-escapes
         - include: timid-macro-args
         - include: string-interpolations
+        - match: '"'
+          scope: punctuation.definition.string.end.rgbds
+          pop: true
+        # TODO: handle line continuations? How does RGBDS handle it?
+        - match: '$\n?'
+          scope: invalid.illegal.rgbds
+          pop: true
+    - match: '#"""'
+      scope: punctuation.definition.string.begin.rgbds
+      set:
+        - meta_scope: meta.string.rgbds string.quoted.triple.rgbds
+        - meta_include_prototype: false
+        - match: '"""'
+          scope: punctuation.definition.string.end.rgbds
+          pop: true
+    - match: '#"'
+      scope: punctuation.definition.string.begin.rgbds
+      set:
+        - meta_scope: meta.string.rgbds string.quoted.double.rgbds
+        - meta_include_prototype: false
         - match: '"'
           scope: punctuation.definition.string.end.rgbds
           pop: true
@@ -1390,6 +1438,18 @@ contexts:
           pop: true
 
 
+  expect-ident:
+    - match: '{{symbol_name}}'
+      scope: meta.generic-name.rgbds
+      pop: true
+    - include: else-pop
+
+  expect-ident-defining:
+    - match: '{{symbol_name}}'
+      scope: entity.name.rgbds
+      pop: true
+    - include: else-pop
+
   expect-symbol:
     - include: symbol
     - include: else-pop
@@ -1403,11 +1463,11 @@ contexts:
     - match: '\b(?i:_NARG)\b'
       scope: variable.parameter.rgbds
       pop: true
-    - match: '{{symbol_name}}'
-      scope: meta.generic-name.rgbds
-      pop: true
     - match: '(?!{{reserved}}){{symbol_char}}*(\.){{symbol_name}}'
       scope: meta.generic-name.local.rgbds
       captures:
         1: punctuation.accessor.dot.rgbds
+      pop: true
+    - match: '{{symbol_name}}'
+      scope: meta.generic-name.rgbds
       pop: true
