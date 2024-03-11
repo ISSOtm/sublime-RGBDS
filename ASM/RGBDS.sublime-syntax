@@ -675,7 +675,9 @@ contexts:
   more-cpu-instr:
     - match: '::'
       scope: punctuation.separator.sequence.rgbds
-      set: cpu-instr
+      set:
+        - include: cpu-instr
+        - include: eol-pop
     - include: expect-eol
 
 
