@@ -3,11 +3,11 @@
 
 ; Some comment
 ; <- comment.line.semi-colon.rgbds punctuation.definition.comment.begin.rgbds
-;^^^^^^^^^^^^^^ comment.line.semi-colon.rgbds
+;^^^^^^^^^^^^^ comment.line.semi-colon.rgbds
 
     ; Same but in SPAAAACE(s)
 ;   ^ punctuation.definition.comment.begin.rgbds
-;   ^^^^^^^^^^^^^^^^^^^^^^^^^^ comment.line.semi-colon.rgbds
+;   ^^^^^^^^^^^^^^^^^^^^^^^^^ comment.line.semi-colon.rgbds
 
 ; Some comment; but not nested
 ;             ^ - punctuation.definition.comment.begin.rgbds
@@ -80,8 +80,8 @@ Internal:
 ;       ^ keyword.declaration.rgbds
 
 Deprecated
-; <- invalid.illegal.rgbds
-;^^^^^^^^^ invalid.illegal.rgbds
+; <- meta.function-call.macro.rgbds variable.function.rgbds
+;^^^^^^^^^ meta.function-call.macro.rgbds variable.function.rgbds
 
 
 ; Testing that consecutive label declarations work, even when separated by a comment...
@@ -99,81 +99,79 @@ GH:
 ; ^ keyword.declaration.rgbds
 
 
-hexadecimal equ $0123456789abcdefABCDEF
-; <- entity.name.constant.rgbds
-;^^^^^^^^^^ entity.name.constant.rgbds
+def hexadecimal equ $0123456789abcdefABCDEF
+; <- keyword.declaration.def.rgbds
+;^^ keyword.declaration.def.rgbds
+;   ^^^^^^^^^^^ entity.name.constant.rgbds
+;               ^^^ keyword.operator.assignment.rgbds
+;                   ^^^ constant.numeric.integer.hexadecimal.rgbds
+def decimal equ 0123456789
+;   ^^^^^^^ entity.name.constant.rgbds
 ;           ^^^ keyword.operator.assignment.rgbds
-;               ^^^ constant.numeric.integer.hexadecimal.rgbds
-decimal equ 0123456789
-; <- entity.name.constant.rgbds
-;^^^^^^ entity.name.constant.rgbds
-;       ^^^ keyword.operator.assignment.rgbds
-;           ^ constant.numeric.integer.decimal.rgbds
-octal equ &01234567
-; <- entity.name.constant.rgbds
-;^^^^ entity.name.constant.rgbds
-;     ^^^ keyword.operator.assignment.rgbds
-;         ^^^^^^^^^ constant.numeric.integer.octal.rgbds
-binary equ %01
-; <- entity.name.constant.rgbds
-;^^^^^ entity.name.constant.rgbds
-;      ^^^ keyword.operator.assignment.rgbds
-;          ^^^ constant.numeric.integer.binary.rgbds
-fixed_point equ 0123456789.0123456789
-; <- entity.name.constant.rgbds
-;^^^^^^^^^^ entity.name.constant.rgbds
-;           ^^^ keyword.operator.assignment.rgbds
-;               ^^^^^^^^^^^^^^^^^^^^^ constant.numeric.float.decimal.rgbds
-character equ "*"
-; <- entity.name.constant.rgbds
-;^^^^^^^^ entity.name.constant.rgbds
+;               ^ constant.numeric.integer.decimal.rgbds
+def octal equ &01234567
+;   ^^^^^ entity.name.constant.rgbds
 ;         ^^^ keyword.operator.assignment.rgbds
-;             ^ punctuation.definition.string.begin.rgbds
-;             ^^^ string.quoted.double.rgbds
-;               ^ punctuation.definition.string.end.rgbds
-gfx equ `01230123
-; <- entity.name.constant.rgbds
-;^^ entity.name.constant.rgbds
-;   ^^^ keyword.operator.assignment.rgbds
-;       ^^^^^^^^^ constant.numeric.integer.other.rgbds
-
-mutable set 42
-; <- entity.name.rgbds
-;^^^^^^ entity.name.rgbds
+;             ^^^^^^^^^ constant.numeric.integer.octal.rgbds
+def binary equ %01
+;   ^^^^^^ entity.name.constant.rgbds
+;          ^^^ keyword.operator.assignment.rgbds
+;              ^^^ constant.numeric.integer.binary.rgbds
+def fixed_point equ 0123456789.0123456789
+;   ^^^^^^^^^^^ entity.name.constant.rgbds
+;               ^^^ keyword.operator.assignment.rgbds
+;                   ^^^^^^^^^^^^^^^^^^^^^ constant.numeric.float.decimal.rgbds
+def character equ "*"
+;   ^^^^^^^^^ entity.name.constant.rgbds
+;             ^^^ keyword.operator.assignment.rgbds
+;                 ^ punctuation.definition.string.begin.rgbds
+;                 ^^^ string.quoted.double.rgbds
+;                   ^ punctuation.definition.string.end.rgbds
+def gfx equ `01230123
+;   ^^^ entity.name.constant.rgbds
 ;       ^^^ keyword.operator.assignment.rgbds
+;           ^^^^^^^^^ constant.numeric.integer.other.rgbds
+
+def equal = 42
+; <- keyword.declaration.def.rgbds
+;^^ keyword.declaration.def.rgbds
+;   ^^^^^ entity.name.rgbds
+;         ^ keyword.operator.assignment.rgbds
 ;           ^^ constant.numeric.integer.decimal.rgbds
-equal = 42
-; <- entity.name.rgbds
-;^^^^ entity.name.rgbds
-;     ^ keyword.operator.assignment.rgbds
-;       ^^ constant.numeric.integer.decimal.rgbds
 
-byte rb 1
-; <- entity.name.constant.rgbds
-;^^^ entity.name.constant.rgbds
-;    ^^ keyword.operator.assignment.rgbds
-;       ^ constant.numeric.integer.decimal.rgbds
-word rw 1
-;^^^ entity.name.constant.rgbds
-;    ^^ keyword.operator.assignment.rgbds
-;       ^ constant.numeric.integer.decimal.rgbds
-long rl 1 ; Not implemented yet
+def byte rb 1
+; <- keyword.declaration.def.rgbds
+;^^ keyword.declaration.def.rgbds
+;   ^^^^ entity.name.constant.rgbds
+;        ^^ keyword.operator.assignment.rgbds
+;           ^ constant.numeric.integer.decimal.rgbds
+def word rw 1
+; <- keyword.declaration.def.rgbds
+;^^ keyword.declaration.def.rgbds
+;   ^^^^ entity.name.constant.rgbds
+;        ^^ keyword.operator.assignment.rgbds
+;           ^ constant.numeric.integer.decimal.rgbds
+def long rl 1 ; Not implemented yet
+; <- keyword.declaration.def.rgbds
+;^^ keyword.declaration.def.rgbds
+;   ^^^^ entity.name.constant.rgbds
+;        ^^ keyword.operator.assignment.rgbds
+;           ^ constant.numeric.integer.decimal.rgbds
 
-string equs "escape test: \\\"\,\{\}\n\r\t\1\2\3\4\5\6\7\8\9\@\?"
-; <- entity.name.constant.rgbds
-;^^^^^ entity.name.constant.rgbds
-;      ^^^^ keyword.operator.assignment.rgbds
-;           ^ punctuation.definition.string.begin.rgbds
-;           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ meta.string.rgbds string.quoted.double.rgbds
-;                         ^^ constant.character.escape.rgbds
-;                           ^^ constant.character.escape.rgbds
+def string equs "escape test: \\\"\{\}\n\r\t\1\2\3\4\5\6\7\8\9\@\?"
+; <- keyword.declaration.def.rgbds
+;^^ keyword.declaration.def.rgbds
+;   ^^^^^^ entity.name.constant.rgbds
+;          ^^^^ keyword.operator.assignment.rgbds
+;               ^ punctuation.definition.string.begin.rgbds
+;               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ meta.string.rgbds string.quoted.double.rgbds
 ;                             ^^ constant.character.escape.rgbds
 ;                               ^^ constant.character.escape.rgbds
 ;                                 ^^ constant.character.escape.rgbds
 ;                                   ^^ constant.character.escape.rgbds
 ;                                     ^^ constant.character.escape.rgbds
 ;                                       ^^ constant.character.escape.rgbds
-;                                         ^^ variable.parameter.rgbds
+;                                         ^^ constant.character.escape.rgbds
 ;                                           ^^ variable.parameter.rgbds
 ;                                             ^^ variable.parameter.rgbds
 ;                                               ^^ variable.parameter.rgbds
@@ -183,41 +181,37 @@ string equs "escape test: \\\"\,\{\}\n\r\t\1\2\3\4\5\6\7\8\9\@\?"
 ;                                                       ^^ variable.parameter.rgbds
 ;                                                         ^^ variable.parameter.rgbds
 ;                                                           ^^ variable.parameter.rgbds
-;                                                             ^^ invalid.illegal.rgbds
-;                                                               ^ punctuation.definition.string.end.rgbds
-
-unfinished equs "aye
-;                   ^ invalid.illegal.rgbds
+;                                                             ^^ variable.parameter.unique.rgbds
+;                                                                 ^ punctuation.definition.string.end.rgbds
 
 ; <- - string - invalid.illegal.rgbds
 
-str_cat equs strCAT("one ", "two")
-; <- entity.name.constant.rgbds
-;^^^^^^ entity.name.constant.rgbds
-;       ^^^^ keyword.operator.assignment.rgbds
-;            ^^^^^^^^^^^^^^^^^^^^^ meta.function-call.rgbds
-;                                 ^ - meta.function-call.rgbds
-;            ^^^^^^ support.function.string.rgbds
-;                  ^ punctuation.section.arguments.begin.rgbds
-;                   ^^^^^^ meta.string.rgbds string.quoted.double.rgbds
-;                   ^ punctuation.definition.string.begin.rgbds
-;                        ^ punctuation.definition.string.end.rgbds
-;                         ^ punctuation.separator.sequence.rgbds
-;                           ^^^^^ meta.string.rgbds string.quoted.double.rgbds
-;                           ^ punctuation.definition.string.begin.rgbds
-;                               ^ punctuation.definition.string.end.rgbds
-;                                ^ punctuation.section.arguments.end.rgbds
+def str_cat equs strCAT("one ", "two")
+;   ^^^^^^^ entity.name.constant.rgbds
+;           ^^^^ keyword.operator.assignment.rgbds
+;                ^^^^^^^^^^^^^^^^^^^^^ meta.function-call.rgbds
+;                                     ^ - meta.function-call.rgbds
+;                ^^^^^^ support.function.string.rgbds
+;                      ^ punctuation.section.arguments.begin.rgbds
+;                       ^^^^^^ meta.string.rgbds string.quoted.double.rgbds
+;                       ^ punctuation.definition.string.begin.rgbds
+;                            ^ punctuation.definition.string.end.rgbds
+;                             ^ punctuation.separator.sequence.rgbds
+;                               ^^^^^ meta.string.rgbds string.quoted.double.rgbds
+;                               ^ punctuation.definition.string.begin.rgbds
+;                                   ^ punctuation.definition.string.end.rgbds
+;                                    ^ punctuation.section.arguments.end.rgbds
 
 ; Check that consecutive symbol assignments are handled properly (i.e. expressions don't "leak")
-sym1 = 0
-; <- entity.name.rgbds
-sym2 = sym1
-; <- entity.name.rgbds
-sym3 = 0
-; <- entity.name.rgbds
+def sym1 = 0
+; <- keyword.declaration.def.rgbds
+def sym2 = sym1
+; <- keyword.declaration.def.rgbds
+def sym3 = 0
+; <- keyword.declaration.def.rgbds
 
 
-testMacro: MACRO
+MACRO testMacro
 
 ; <- meta.block.macro.rgbds
 ENDM
@@ -265,11 +259,12 @@ IF 42
 ENDC
 
 IF 42 , whoa
-;     ^^^^^^ invalid.illegal.rgbds
+;     ^ invalid.illegal.rgbds
+;       ^^^^ invalid.illegal.rgbds
 ENDC
 
-str equs "stronk" 0
-;                 ^ invalid.illegal.rgbds
+def str equs "stronk" 0
+;                     ^ invalid.illegal.rgbds
 
 ccf ccf
 ;   ^^^ invalid.illegal.rgbds
@@ -278,7 +273,7 @@ export syma, symb, symc symd
 ;                       ^^^^ invalid.illegal.rgbds
 
 
-mackey: macro
+MACRO mackey
 
 ; <- meta.block.macro.rgbds
     shift 64
@@ -296,11 +291,12 @@ mackey: macro
     endc
 endm
 
-c#4 equ 0
-; <- entity.name.constant.rgbds
-;^^ entity.name.constant.rgbds
-;   ^^^ keyword.operator.assignment.rgbds keyword.operator.word.rgbds
-;       ^ constant.numeric.integer.decimal.rgbds
+def c#4 equ 0
+; <- keyword.declaration.def.rgbds
+;^^ keyword.declaration.def.rgbds
+;   ^^^ entity.name.constant.rgbds
+;       ^^^ keyword.operator.assignment.rgbds keyword.operator.word.rgbds
+;           ^ constant.numeric.integer.decimal.rgbds
 
 LOAD "Section name", HRAM[$DABE],BANK[42],ALIGN[8]
 ; <- keyword.context.block.load.rgbds
@@ -339,12 +335,6 @@ on several lines
 ; <- comment.block.rgbds
 ;^^ comment.block.rgbds punctuation.definition.comment.end.rgbds
 ;  ^^^^^^^^^^^^^^ - comment
-
-label: macro
-inner: macro
-; <- invalid.illegal.rgbds
-;^^^^^^^^^^^ invalid.illegal.rgbds
-endm
 
 ; <- - meta.block.macro.rgbds
 
@@ -416,7 +406,7 @@ PRINT "hi", $BABE
     guys! \#
 ; <- meta.string.rgbds string.quoted.triple.rgbds
 ;^^^^^^^^^^^^ meta.string.rgbds string.quoted.triple.rgbds
-;         ^^ variable.parameter.rgbds
+;         ^^ variable.parameter.all.rgbds
 """
 ; <- meta.string.rgbds string.quoted.triple.rgbds punctuation.definition.string.end.rgbds
 ;^^ meta.string.rgbds string.quoted.triple.rgbds punctuation.definition.string.end.rgbds
@@ -507,14 +497,13 @@ load union "...", romX
 ;           ^^^^^^^^^ variable.parameter.rgbds
     PRINTLN \<
 ;   ^^^^^^^ keyword.other.rgbds
-;           ^^^ variable.parameter.rgbds
+;           ^^ variable.parameter.rgbds
     PRINTLN \<§!>
 ;   ^^^^^^^ keyword.other.rgbds
 ;           ^^ variable.parameter.rgbds
-;             ^^^ invalid.illegal.rgbds
 
     mac_call a,b(c,d),e
-;   ^^^^^^^^^^^^^^^^^^^^ meta.function-call.macro.rgbds
+;   ^^^^^^^^^^^^^^^^^^^ meta.function-call.macro.rgbds
 ;   ^^^^^^^^ variable.function.rgbds
 ;             ^ punctuation.separator.arguments.rgbds
 ;                 ^ -punctuation.separator.arguments.rgbds
@@ -523,8 +512,8 @@ load union "...", romX
 ; Check than an unterminated parens does not cause problems
     mac_call a,b(c,d
     mac_call a, b
-;   ^^^^^^^^^^^^^^ meta.function-call.macro.rgbds
-;             ^ meta.function-call.macro.rgbds punctuation.separator.arguments.rgbds
+;   ^^^^^^^^^^^^^ meta.function-call.macro.rgbds
+;             ^ punctuation.separator.arguments.rgbds
 
     DEF sym equs "ayaya"
 ;   ^^^ keyword.declaration.def.rgbds
@@ -590,18 +579,83 @@ db "{inter\1polation}", 0, 1, 2
  def a\1b equ other
 ;^^^ keyword.declaration.def.rgbds
 ;     ^^ variable.parameter.rgbds
-;    ^^^^ entity.name.rgbds
-;        ^^^^^^^^^^ - entity.name.rgbds
+;    ^^^^ entity.name.constant.rgbds
  def \1 equ thing
 ;^^^ keyword.declaration.def.rgbds
 ;    ^^ variable.parameter.rgbds
-;    ^^ entity.name.rgbds
-;      ^^^^^^^^^^ - entity.name.rgbds
  def a{strsym}b equ blah
 ;^^^ keyword.declaration.def.rgbds
 ;     ^^^^^^^^ meta.interpolation.rgbds
-;    ^^^^^^^^^^ entity.name.rgbds
-;              ^^^^^^^^^ - entity.name.rgbds
 
  0abc
 ;^ invalid.illegal.rgbds
+
+
+; Line continuations. (Tricky!)
+
+    macro_call a, \
+;                 ^ punctuation.separator.continuation.line.rgbds - invalid.illegal.rgbds
+    macro_call a, \
+               b
+; <- meta.function-call.macro.rgbds
+;^^^^^^^^^^^^^^^ meta.function-call.macro.rgbds
+
+    macro_call a, \ ; ...
+;                 ^ punctuation.separator.continuation.line.rgbds - invalid.illegal.rgbds
+;                   ^^^^^ comment.line.semi-colon.rgbds
+    macro_call a, \ ; ...
+               b
+; <- meta.function-call.macro.rgbds
+;^^^^^^^^^^^^^^^ meta.function-call.macro.rgbds
+
+    macro_call a, \ /* ... */
+;                 ^ punctuation.separator.continuation.line.rgbds - invalid.illegal.rgbds
+;                   ^^^^^^^^^ comment.block.rgbds
+    macro_call a, \ /* ... */
+               b
+; <- meta.function-call.macro.rgbds
+;^^^^^^^^^^^^^^^ meta.function-call.macro.rgbds
+
+    macro_call a, \ oops
+;                 ^ invalid.illegal.rgbds - punctuation.separator.continuation.line.rgbds
+    macro_call a, \ oops
+               b
+; <- - meta.function-call.macro.rgbds
+;^^^^^^^^^^^^^^^ - meta.function-call.macro.rgbds
+
+    db "a, \
+;          ^ punctuation.separator.continuation.line.rgbds - invalid.illegal.rgbds
+    db "a, \
+        b
+; <- meta.string.rgbds string.quoted.double.rgbds
+;^^^^^^^^ meta.string.rgbds string.quoted.double.rgbds
+
+    db "a, \ ; ...
+;          ^ punctuation.separator.continuation.line.rgbds - invalid.illegal.rgbds
+;            ^^^^^ comment.line.semi-colon.rgbds
+    db "a, \ ; ...
+        b"
+; <- meta.string.rgbds string.quoted.double.rgbds
+;^^^^^^^^^ meta.string.rgbds string.quoted.double.rgbds
+
+    db "a, \ /* ... */
+;          ^ punctuation.separator.continuation.line.rgbds - invalid.illegal.rgbds
+;            ^^^^^^^^^ comment.block.rgbds
+    db "a, \ /* ... */
+        b"
+; <- meta.string.rgbds string.quoted.double.rgbds
+;^^^^^^^^^ meta.string.rgbds string.quoted.double.rgbds
+
+    db "a, \ oops
+;          ^ - punctuation.separator.continuation.line.rgbds
+    db "a, \ oops
+        b
+; <- - meta.string.rgbds string.quoted.double.rgbds
+;^^^^^^^^ - meta.string.rgbds string.quoted.double.rgbds
+
+
+db 0 
+db 1
+; <- keyword.other.data.rgbds
+;^ keyword.other.data.rgbds
+;  ^ constant.numeric.integer.decimal.rgbds

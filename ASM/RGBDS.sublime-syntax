@@ -35,14 +35,17 @@ variables:
 # https://github.com/gbdev/rgbds/blob/master/src/asm/asmy.y
 contexts:
   prototype:
-    - include: comments
+    - include: line-continuation
+    - include: block-comment
     - include: macro-args
-    - include: interpolations
-    - include: line-conts
+    - include: interpolation
 
   # There is no need to separate most of these, but categorization helps, and then why
   # not just use the same one as RGBDS' grammar?
   main:
+    - match: ';'
+      scope: punctuation.definition.comment.begin.rgbds
+      push: line-comment
     - include: directive
     - include: label # Make sure that this is included *after* `directive`!
     - include: cpu-instr
@@ -52,13 +55,20 @@ contexts:
       scope: invalid.illegal.rgbds
 
 
-  comments:
-    - match: ';'
-      scope: punctuation.definition.comment.begin.rgbds
+  line-continuation:
+    - match: '(\\)(?=(?:[^\n\S]+|/\*(?:[^*]+|\*[^/])*\*?\*/)*[\n;])'
+      captures:
+        1: punctuation.separator.continuation.line.rgbds
       push:
-        - meta_scope: comment.line.semi-colon.rgbds
-        - match: '$\n?' # Consume the newline so that completions aren't shown at the end of the line when typing comments
+        - match: '\n'
           pop: true
+        - match: ';'
+          scope: punctuation.definition.comment.begin.rgbds
+          push: line-comment
+        - include: block-comment # They may be disabled if the calling scope disabled the prototype.
+
+
+  block-comment:
     - match: '/\*'
       scope: punctuation.definition.comment.begin.rgbds
       push:
@@ -94,8 +104,8 @@ contexts:
       set: unknown
     - include: else-pop
 
-  # Duplicated in string-interpolations due to special handling
-  interpolations:
+  # Duplicated in string-interpolation due to special handling
+  interpolation:
     - match: '{(?:[^}:](:))?'
       scope: punctuation.section.interpolation.begin.rgbds
       captures:
@@ -104,43 +114,34 @@ contexts:
         - meta_scope: meta.interpolation.rgbds
         - meta_content_scope: source.rgbds.embedded
         - meta_include_prototype: false
-        - include: timid-interpolations
+        - include: timid-interpolation
         - include: timid-macro-args
         - match: '}'
           scope: punctuation.section.interpolation.end.rgbds
           set: unknown
 
-  # Used after "meta" constructs (macro args, interpolations), since the rest of the line could really be anything.
+  # Used after "meta" constructs (macro args, interpolation), since the rest of the line could really be anything.
   unknown:
-    - include: comments # These "meta" constructs rarely exclude comments
+    - include: block-comment # These "meta" constructs rarely exclude comments
+    - match: ';'
+      scope: punctuation.definition.comment.begin.rgbds
+      set: line-comment
     - match: '.*?(?=\\[1-9@#<]|\{)'
       pop: true # Let the upcoming macro arg or interpolation take over
     - match: $
       pop: true
 
-  line-conts:
-    - match: '(\\)[ \t]*(;.+)?$\n?'
-      scope: invalid.deprecated.rgbds
-      captures:
-        1: punctuation.separator.continuation.rgbds
-        2: comment.line.semi-colon.rgbds
-    # Any backslash followed by whitespace is assumed to be a line continuation; however,
-    # if the above didn't match, then it's not a valid line continuation, and thus invalid.
-    - match: '\\[ \t]+'
-      scope: invalid.illegal.rgbds
-
-
 
   directive:
-    - match: '^\s*(?i:(def)|(redef))(?!{{symbol_char}})\s+'
+    - match: '\b(?i:(def)|(redef))\s+'
       captures:
         1: keyword.declaration.def.rgbds
         2: keyword.operator.assignment.redef.rgbds
       push:
         - meta_include_prototype: false
-        - include: comments
+        - include: block-comment
         - include: timid-macro-args
-        - include: timid-interpolations
+        - include: timid-interpolation
         - match: '({{symbol_name}})\s+((?i:equs))(?!{{symbol_char}})'
           captures:
             1: entity.name.constant.rgbds
@@ -203,15 +204,6 @@ contexts:
       push:
         - macro-body
         - expect-eol
-    - match: '^({{symbol_name}})\s*(:)\s*((?i:macro))\b'
-      scope: meta.function.rgbds invalid.deprecated.rgbds
-      captures:
-        1: entity.name.macro.rgbds
-        2: keyword.declaration.rgbds
-        3: keyword.declaration.macro.rgbds
-      push:
-        - macro-body
-        - expect-eol
 
   macro-body:
     - meta_scope: meta.block.macro.rgbds
@@ -252,9 +244,6 @@ contexts:
     - match: '^\s*(:)'
       captures:
         1: keyword.declaration.anon-label.rgbds
-    # If the above didn't match, then it's invalid
-    - match: '^({{symbol_name}})\b'
-      scope: invalid.illegal.rgbds
 
 
 
@@ -687,7 +676,7 @@ contexts:
       scope: variable.function.rgbds
       push:
         - meta_scope: meta.function-call.macro.rgbds
-        - match: '\\[,;{}]' # In particukar, escaped commas do not separate macro args.
+        - match: '\\[,;{}]' # In particular, escaped commas do not separate macro args.
           scope: constant.character.escape.rgbds
         - include: parens-macro-arg # Parens auto-escape macro args
         - match: ','
@@ -723,7 +712,7 @@ contexts:
       push:
         - expect-eol
         - expect-string
-    - match: '\b(?i:print(?:ln)?)\b'
+    - match: '\b(?i:print|println?)\b'
       scope: keyword.other.rgbds
       push:
         - expect-eol
@@ -1081,25 +1070,32 @@ contexts:
 
   # Pops the context it's included in on EOL... but not line continuations!
   eol-pop:
-    - match: '(\\)\s*\n'
-      captures:
-        1: punctuation.separator.continuation.line.rgbds
-    - match: '(\\)\s*$' # No line continuations at EOF!
+    - match: '[^\S\n]+' # Consume whitespace (except newlines).
+    - match: '(?=\n)' # Don't consume the newline, only `expect-eol` has that privilege.
+      pop: true
+    - match: ';'
+      scope: punctuation.definition.comment.begin.rgbds
+      set: line-comment
+    - match: '(\\)\s*' # Other backslashes followed by whitespace are invalid.
       captures:
         1: invalid.illegal.rgbds
       pop: true
-    - match: '$\n?' # Nothing strides lines in RGBDS... except line continuations, whoops.
+
+  line-comment:
+    - meta_scope: comment.line.semi-colon.rgbds
+    - match: '(?=\n)' # Don't consume the newline, only `expect-eol` has that privilege.
       pop: true
 
   # Useful as a fallback, that highlighting can try to keep progressing.
   # Usage: `- include: else-pop` at the END of the scope this should be applied in.
   else-pop:
     - include: eol-pop
-    - match: '\s' # Consume whitespace
     - match: '(?=\S)'
       pop: true
 
   expect-eol:
+    - match: '\n'
+      pop: true
     - include: eol-pop
     - match: '(?=\S)'
       set:
@@ -1299,7 +1295,7 @@ contexts:
         - meta_include_prototype: false
         - include: string-escapes
         - include: timid-macro-args
-        - include: string-interpolations
+        - include: string-interpolation
         - match: '"""'
           scope: punctuation.definition.string.end.rgbds
           pop: true
@@ -1310,12 +1306,12 @@ contexts:
         - meta_include_prototype: false
         - include: string-escapes
         - include: timid-macro-args
-        - include: string-interpolations
+        - include: string-interpolation
         - match: '"'
           scope: punctuation.definition.string.end.rgbds
           pop: true
-        # TODO: handle line continuations? How does RGBDS handle it?
-        - match: '$\n?'
+        - include: line-continuation
+        - match: '(?=\n)'
           scope: invalid.illegal.rgbds
           pop: true
     - match: '#"""'
@@ -1392,7 +1388,7 @@ contexts:
     - match: '%[duxXbofs%]'
       scope: constant.other.placeholder.rgbds
 
-  # This is used when the macro args are part of an otherwise special scope (typically interpolations)
+  # This is used when the macro args are part of an otherwise special scope (typically interpolation)
   # that should be returned to normally instead of treating all up to EOL as unknown
   timid-macro-args:
     - match: '\\[1-9]'
@@ -1409,7 +1405,7 @@ contexts:
         - expect-closing-angle
         - expect-symbol
 
-  timid-interpolations:
+  timid-interpolation:
     - match: '{(?:[^}:](:))?'
       scope: punctuation.section.interpolation.begin.rgbds
       captures:
@@ -1418,13 +1414,13 @@ contexts:
         - meta_scope: meta.interpolation.rgbds
         - meta_content_scope: source.rgbds.embedded
         - meta_include_prototype: false
-        - include: timid-interpolations
+        - include: timid-interpolation
         - include: timid-macro-args
         - match: '}'
           scope: punctuation.section.interpolation.end.rgbds
           pop: true
 
-  string-interpolations:
+  string-interpolation:
     - match: '{(?:[^}:](:))?'
       scope: punctuation.section.interpolation.begin.rgbds
       captures:
@@ -1434,7 +1430,7 @@ contexts:
         - meta_scope: meta.interpolation.rgbds
         - meta_content_scope: source.rgbds.embedded
         - meta_include_prototype: false
-        - include: timid-interpolations
+        - include: timid-interpolation
         - include: timid-macro-args
         - match: '}'
           scope: punctuation.section.interpolation.end.rgbds
