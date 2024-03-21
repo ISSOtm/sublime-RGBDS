@@ -1,0 +1,11 @@
+Sublime-RGBDS 2.5.1 changelog:
+
+The syntax definition was cleaned up significantly!
+ - Line continuations are now *finally* functional!
+ - Builtin string symbols are now recognised as strings, and properly highlighted
+ - Improved handling of interpolations and macro args
+ - And more fixes!
+ - Some syntax that was deprecated in v0.7.0 has been removed
+
+If you would like to help, some of GBDev's projects are open for help.
+Please contact me (https://eldred.fr/about)!
