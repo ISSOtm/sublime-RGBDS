@@ -538,14 +538,16 @@ load union "...", romX
 ;   ^^^^ keyword.declaration.end.macro.rgbds
 
 db "a{d:SYMBOL}b"
+;    ^^^^^^^^^^ meta.interpolation.rgbds
 ;    ^ punctuation.section.interpolation.begin.rgbds
-;     ^^ punctuation.section.interpolation.begin.rgbds
+;     ^ constant.other.format-spec.rgbds
 ;       ^^^^^^ source.rgbds.embedded
 ;    ^^^^^^^^^^ - string
 ;             ^ punctuation.section.interpolation.end.rgbds
 ;   ^ meta.string.rgbds string.quoted.double.rgbds
 ;              ^ meta.string.rgbds string.quoted.double.rgbds
 db {STRING}
+;  ^^^^^^^^ meta.interpolation.rgbds
 ;  ^ punctuation.section.interpolation.begin.rgbds
 ;   ^^^^^^ source.rgbds.embedded
 ;         ^ punctuation.section.interpolation.end.rgbds
@@ -567,8 +569,10 @@ opt b, g,
 
 ; Macro args in interpolations (string or not) should not override the end of the interpolation
 db "{inter\1polation}", 0, 1, 2
+;         ^^ variable.parameter.rgbds
 ;                    ^^^^^^^^^^ - source.rgbds.embedded
 {test\1st} blah blah blah
+;    ^^ variable.parameter.rgbds
 ;         ^^^^^^^^^^^^^^^^ - source.rgbds.embedded
 
 ; `def` should degrade gracefully with macro args and all
@@ -580,12 +584,15 @@ db "{inter\1polation}", 0, 1, 2
 ;^^^ keyword.declaration.def.rgbds
 ;     ^^ variable.parameter.rgbds
 ;    ^^^^ entity.name.constant.rgbds
+;         ^^^ keyword.operator.assignment.rgbds keyword.operator.word.rgbds
  def \1 equ thing
 ;^^^ keyword.declaration.def.rgbds
 ;    ^^ variable.parameter.rgbds
+;       ^^^ keyword.operator.assignment.rgbds keyword.operator.word.rgbds
  def a{strsym}b equ blah
 ;^^^ keyword.declaration.def.rgbds
 ;     ^^^^^^^^ meta.interpolation.rgbds
+;               ^^^ keyword.operator.assignment.rgbds keyword.operator.word.rgbds
 
  0abc
 ;^ invalid.illegal.rgbds

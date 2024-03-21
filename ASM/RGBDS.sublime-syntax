@@ -37,7 +37,10 @@ contexts:
   prototype:
     - include: line-continuation
     - include: block-comment
-    - include: macro-args
+    - match: '(?=\\[0-9@#<])'
+      push:
+        - unknown
+        - expect-macro-args
     - include: interpolation
 
   # There is no need to separate most of these, but categorization helps, and then why
@@ -77,26 +80,30 @@ contexts:
           scope: punctuation.definition.comment.end.rgbds
           pop: true
 
-  # Duplicated in timid-macro-args due to special handling
+  # This is used when the macro args are part of an otherwise special scope (typically interpolation)
+  # that should be returned to normally instead of treating all up to EOL as unknown
   macro-args:
+    - match: '(?=\\[0-9@#<])'
+      push: expect-macro-args
+  expect-macro-args:
     - match: '\\[1-9]'
       scope: variable.parameter.rgbds
-      push: unknown
+      pop: true
     - match: '\\@'
       scope: variable.parameter.unique.rgbds
-      push: unknown
+      pop: true
     - match: '\\#'
       scope: variable.parameter.all.rgbds
-      push: unknown
+      pop: true
     - match: '\\<[0-9]+>'
       scope: variable.parameter.rgbds
-      push: unknown
+      pop: true
     # Otherwise, it must be followed by a symbol name
     - match: '\\<'
-      push:
-        - unknown
+      set:
         - expect-closing-angle
         - expect-symbol
+    # No else-pop because this is always included from some kind of lookahead.
 
   expect-closing-angle:
     - meta_scope: variable.parameter.rgbds
@@ -106,19 +113,22 @@ contexts:
 
   # Duplicated in string-interpolation due to special handling
   interpolation:
-    - match: '{(?:[^}:](:))?'
-      scope: punctuation.section.interpolation.begin.rgbds
+    - match: '({)(?:([^}:]*)(:))?'
       captures:
-        1: punctuation.separator.fmt.rgbds
+        1: punctuation.section.interpolation.begin.rgbds
+        2: constant.other.format-spec.rgbds
+        3: punctuation.separator.fmt.rgbds
       push:
         - meta_scope: meta.interpolation.rgbds
         - meta_content_scope: source.rgbds.embedded
         - meta_include_prototype: false
         - include: timid-interpolation
-        - include: timid-macro-args
+        - include: macro-args
         - match: '}'
           scope: punctuation.section.interpolation.end.rgbds
           set: unknown
+        - match: '(?={{symbol_name}})'
+          push: expect-symbol
 
   # Used after "meta" constructs (macro args, interpolation), since the rest of the line could really be anything.
   unknown:
@@ -140,16 +150,16 @@ contexts:
       push:
         - meta_include_prototype: false
         - include: block-comment
-        - include: timid-macro-args
+        - include: macro-args
         - include: timid-interpolation
-        - match: '({{symbol_name}})\s+((?i:equs))(?!{{symbol_char}})'
+        - match: '(?:({{symbol_name}})\s+)?((?i:equs))(?!{{symbol_char}})'
           captures:
             1: entity.name.constant.rgbds
             2: keyword.operator.assignment.rgbds keyword.operator.word.rgbds
           set:
             - expect-eol
             - expect-string
-        - match: '({{symbol_name}})\s+((?i:equ|rb|rw|rl))(?!{{symbol_char}})'
+        - match: '(?:({{symbol_name}})\s+)?((?i:equ|rb|rw|rl))(?!{{symbol_char}})'
           captures:
             1: entity.name.constant.rgbds
             2: keyword.operator.assignment.rgbds keyword.operator.word.rgbds
@@ -676,6 +686,12 @@ contexts:
       scope: variable.function.rgbds
       push:
         - meta_scope: meta.function-call.macro.rgbds
+        - meta_include_prototype: false
+        - include: line-continuation
+        - include: block-comment
+        - match: '(?=\\[0-9@#<])'
+          push: expect-macro-args
+        - include: timid-interpolation
         - match: '\\[,;{}]' # In particular, escaped commas do not separate macro args.
           scope: constant.character.escape.rgbds
         - include: parens-macro-arg # Parens auto-escape macro args
@@ -683,14 +699,21 @@ contexts:
           scope: punctuation.separator.arguments.rgbds
         - match: '"""'
           push:
+            - match: '\\["{}\\]' # In particular, do not consider escaped quotes.
+              scope: constant.character.escape.rgbds
+            - match: ';' # Within quotes, these aren't comments.
+            - include: macro-args
+            - include: timid-interpolation
             - match: '"""'
               pop: true
+            - include: eol-pop
         - match: '"'
           push:
             - match: '\\["{}\\]' # In particular, do not consider escaped quotes.
               scope: constant.character.escape.rgbds
             - match: ';' # Within quotes, these aren't comments.
-              meta_include_prototype: false
+            - include: macro-args
+            - include: timid-interpolation
             - match: '"'
               pop: true
             - include: eol-pop
@@ -1154,7 +1177,7 @@ contexts:
     - match: '%[01][01_]*\b'
       scope: constant.numeric.integer.binary.rgbds
     # Strings are implicitly charmap-converted
-    - match: '(?i:(?=#?"|strupr|strlwr|charsub|strsub|strrpl|strcat|strfmt))'
+    - match: '(?i:(?=#?"|strupr|strlwr|section|charsub|strsub|strrpl|strcat|strfmt))'
       push: string
     # FIXME: We don't support arbitrary characters (`-g`)
     - match: '`[0123]+\b'
@@ -1164,7 +1187,7 @@ contexts:
     # Duplicated at scope `symbol`, keep in sync
     - match: '@'
       scope: constant.language.rgbds
-    - match: '\b(?i:_RS|__LINE__|__FILE__|__DATE__|__TIME__|__ISO_8601_LOCAL__|__ISO_8601_UTC__|__UTC_YEAR__|__UTC_MONTH__|__UTC_DAY__|__UTC_HOUR__|__UTC_MINUTE__|__UTC_SECOND__|__RGBDS_MAJOR__|__RGBDS_MINOR__|__RGBDS_PATCH__|__RGBDS_VERSION__)\b'
+    - match: '\b(?i:_RS|__DATE__|__TIME__|__ISO_8601_LOCAL__|__ISO_8601_UTC__|__UTC_YEAR__|__UTC_MONTH__|__UTC_DAY__|__UTC_HOUR__|__UTC_MINUTE__|__UTC_SECOND__|__RGBDS_MAJOR__|__RGBDS_MINOR__|__RGBDS_PATCH__|__RGBDS_VERSION__)\b'
       scope: constant.language.rgbds
     - match: '\b(?i:_NARG)\b'
       scope: variable.parameter.rgbds
@@ -1294,7 +1317,7 @@ contexts:
         - meta_scope: meta.string.rgbds string.quoted.triple.rgbds
         - meta_include_prototype: false
         - include: string-escapes
-        - include: timid-macro-args
+        - include: macro-args
         - include: string-interpolation
         - match: '"""'
           scope: punctuation.definition.string.end.rgbds
@@ -1305,7 +1328,7 @@ contexts:
         - meta_scope: meta.string.rgbds string.quoted.double.rgbds
         - meta_include_prototype: false
         - include: string-escapes
-        - include: timid-macro-args
+        - include: macro-args
         - include: string-interpolation
         - match: '"'
           scope: punctuation.definition.string.end.rgbds
@@ -1344,6 +1367,13 @@ contexts:
         - expect-arg-end
         - expect-string
         - expect-arg-begin
+    - match: '\b(?i:section)\b'
+      scope: support.function.string.rgbds
+      set:
+        - meta-func-call
+        - expect-arg-end
+        - expect-symbol
+        - expect-arg-begin
     # Binary builtin
     - match: '\b(?i:charsub)\b'
       scope: support.function.string.rgbds
@@ -1381,6 +1411,10 @@ contexts:
         - expect-arg-end
         - expect-fmt-list
         - expect-arg-begin
+    # Builtin symbols
+    - match: '\b__(?i:date|time|iso_8601_local|iso_8601_utc|rgbds_version)__\b'
+      scope: constant.language.rgbds
+      pop: true
 
   string-escapes:
     - match: '\\[\\"{}nrt]'
@@ -1388,53 +1422,42 @@ contexts:
     - match: '%[duxXbofs%]'
       scope: constant.other.placeholder.rgbds
 
-  # This is used when the macro args are part of an otherwise special scope (typically interpolation)
-  # that should be returned to normally instead of treating all up to EOL as unknown
-  timid-macro-args:
-    - match: '\\[1-9]'
-      scope: variable.parameter.rgbds
-    - match: '\\@'
-      scope: variable.parameter.unique.rgbds
-    - match: '\\#'
-      scope: variable.parameter.all.rgbds
-    - match: '\\<[0-9]+>'
-      scope: variable.parameter.rgbds
-    # Otherwise, it must be followed by a symbol name
-    - match: '\\<'
-      push:
-        - expect-closing-angle
-        - expect-symbol
-
   timid-interpolation:
-    - match: '{(?:[^}:](:))?'
-      scope: punctuation.section.interpolation.begin.rgbds
+    - match: '({)(?:([^}:]*)(:))?'
       captures:
-        1: punctuation.separator.fmt.rgbds
+        1: punctuation.section.interpolation.begin.rgbds
+        2: constant.other.format-spec.rgbds
+        3: punctuation.separator.fmt.rgbds
       push:
         - meta_scope: meta.interpolation.rgbds
         - meta_content_scope: source.rgbds.embedded
         - meta_include_prototype: false
         - include: timid-interpolation
-        - include: timid-macro-args
+        - include: macro-args
         - match: '}'
           scope: punctuation.section.interpolation.end.rgbds
           pop: true
+        - match: '(?={{symbol_name}})'
+          push: expect-symbol
 
   string-interpolation:
-    - match: '{(?:[^}:](:))?'
-      scope: punctuation.section.interpolation.begin.rgbds
+    - match: '({)(?:([^}:]*)(:))?'
       captures:
-        1: punctuation.separator.fmt.rgbds
+        1: punctuation.section.interpolation.begin.rgbds
+        2: constant.other.format-spec.rgbds
+        3: punctuation.separator.fmt.rgbds
       push:
         - clear_scopes: 1 # Temporarily ignore the `string` scope
         - meta_scope: meta.interpolation.rgbds
         - meta_content_scope: source.rgbds.embedded
         - meta_include_prototype: false
         - include: timid-interpolation
-        - include: timid-macro-args
+        - include: macro-args
         - match: '}'
           scope: punctuation.section.interpolation.end.rgbds
           pop: true
+        - match: '(?={{symbol_name}})'
+          push: expect-symbol
 
 
   expect-ident:
@@ -1452,11 +1475,11 @@ contexts:
   expect-symbol:
     - include: symbol
     - include: else-pop
-  symbol: # Duplicated in scope `num-symbol`, keep in sync
+  symbol:
     - match: '@'
       scope: constant.language.rgbds
       pop: true
-    - match: '\b(?i:_RS|__LINE__|__FILE__|__DATE__|__TIME__|__ISO_8601_LOCAL__|__ISO_8601_UTC__|__UTC_YEAR__|__UTC_MONTH__|__UTC_DAY__|__UTC_HOUR__|__UTC_MINUTE__|__UTC_SECOND__|__RGBDS_MAJOR__|__RGBDS_MINOR__|__RGBDS_PATCH__|__RGBDS_RC__|__RGBDS_VERSION__)\b'
+    - match: '\b(?i:_RS|__DATE__|__TIME__|__ISO_8601_LOCAL__|__ISO_8601_UTC__|__UTC_YEAR__|__UTC_MONTH__|__UTC_DAY__|__UTC_HOUR__|__UTC_MINUTE__|__UTC_SECOND__|__RGBDS_MAJOR__|__RGBDS_MINOR__|__RGBDS_PATCH__|__RGBDS_RC__|__RGBDS_VERSION__)\b'
       scope: constant.language.rgbds
       pop: true
     - match: '\b(?i:_NARG)\b'
@@ -1467,6 +1490,9 @@ contexts:
       captures:
         1: punctuation.accessor.dot.rgbds
       pop: true
-    - match: '{{symbol_name}}'
-      scope: meta.generic-name.rgbds
-      pop: true
+    - match: '(?={{symbol_name}}).' # Consume the first char, though.
+      set:
+        - meta_scope: meta.generic-name.rgbds
+        - include: macro-args
+        - match: '(?!{{symbol_char}})'
+          pop: true
