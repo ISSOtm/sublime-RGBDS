@@ -8,14 +8,15 @@ scope: source.rgbds-map
 variables:
   symbol_char: '[a-zA-Z0-9_\\@#]'
   symbol_name: '(?:{{symbol_char}}+(?:\.{{symbol_char}}+)?(?!{{symbol_char}}))'
+  comment: '((;).+)?'
 
 contexts:
   main:
-    - match: '^\s*(SUMMARY)(:)\s*$'
+    - match: '^\s*(SUMMARY)(:)'
       captures:
         1: keyword.other.rgbds-map
         2: punctuation.terminator.rgbds-map
-    - match: '^\s*(ROM0|ROMX|VRAM|SRAM|WRAM0|WRAMX|OAM|HRAM)(:)\s*(\d+) bytes? used (/) (\d+) free(?: in (\d+) banks)?\s*$'
+    - match: '^\s*(ROM0|ROMX|VRAM|SRAM|WRAM0|WRAMX|OAM|HRAM)(:)\s*(\d+) bytes? used (/) (\d+) free(?: in (\d+) banks)?'
       captures:
         1: keyword.other.bank-type.rgbds-map
         2: punctuation.separator.key-value.rgbds-map
@@ -23,20 +24,20 @@ contexts:
         4: punctuation.separator.sequence.rgbds-map
         5: constant.numeric.integer.decimal.free.rgbds-map
         6: constant.numeric.integer.decimal.nb-banks.rgbds-map
-    - match: '^\s*(ROM0|ROMX|VRAM|SRAM|WRAM0|WRAMX|OAM|HRAM) bank \#([0-9]+)(:)\s*$'
+    - match: '^\s*(ROM0|ROMX|VRAM|SRAM|WRAM0|WRAMX|OAM|HRAM) bank \#([0-9]+)(:)'
       scope: entity.name.bank.rgbds-map
       captures:
         1: keyword.other.bank-type.rgbds-map
         2: constant.numeric.integer.decimal.bank-number.rgbds-map
         3: punctuation.terminator.rgbds-map
-    - match: '^\s*(SECTION)(:) (\$[0-9A-Fa-f]+) \((0) bytes?\) \[(\".*\")\]\s*$'
+    - match: '^\s*(SECTION)(:) (\$[0-9A-Fa-f]+) \((0) bytes?\) \[(\".*\")\]'
       captures:
         1: keyword.other.section.rgbds-map
         2: punctuation.separator.key-value.rgbds-map
         3: constant.numeric.integer.hexadecimal.section-addr.rgbds-map
         4: constant.numeric.integer.decimal.section-size.rgbds-map
         5: entity.name.section.rgbds-map
-    - match: '^\s*(SECTION)(:) (\$[0-9A-Fa-f]+)-(\$[0-9A-Fa-f]+) \((\$[0-9A-Fa-f]+) bytes?\) \[(\".*\")\]\s*$'
+    - match: '^\s*(SECTION)(:) (\$[0-9A-Fa-f]+)-(\$[0-9A-Fa-f]+) \((\$[0-9A-Fa-f]+) bytes?\) \[(\".*\")\]'
       captures:
         1: keyword.other.section.rgbds-map
         2: punctuation.separator.key-value.rgbds-map
@@ -44,18 +45,18 @@ contexts:
         4: constant.numeric.integer.hexadecimal.section-end.rgbds-map
         5: constant.numeric.integer.hexadecimal.section-size.rgbds-map
         6: entity.name.section.rgbds-map
-    - match: '^\s*(\$[0-9A-Fa-f]+)\s*(=)\s*({{symbol_name}})\s*$'
+    - match: '^\s*(\$[0-9A-Fa-f]+)\s*(=)\s*({{symbol_name}})'
       captures:
         1: constant.numeric.integer.hexadecimal.sym-addr.rgbds-map
         2: punctuation.definition.symbol.rgbds-map
         3: entity.name.symbol.rgbds-map
-    - match: '^\s*(SLACK)(:) (\$[0-9A-Fa-f]+) bytes?\s*$'
+    - match: '^\s*(SLACK)(:) (\$[0-9A-Fa-f]+) bytes?'
       scope: meta.annotation.slack.rgbds-map
       captures:
         1: keyword.other.slack.rgbds-map
         2: punctuation.separator.key-value.rgbds-map
         3: constant.numeric.integer.hexadecimal.slack.rgbds-map
-    - match: '^\s*(EMPTY)(?:(:) (\$[0-9A-Fa-f]+)-(\$[0-9A-Fa-f]+) \((\$[0-9A-Fa-f]+) bytes?\))?\s*$'
+    - match: '^\s*(EMPTY)(?:(:) (\$[0-9A-Fa-f]+)-(\$[0-9A-Fa-f]+) \((\$[0-9A-Fa-f]+) bytes?\))?'
       scope: meta.annotation.empty.rgbds-map
       captures:
         1: keyword.other.empty.rgbds-map
@@ -63,12 +64,17 @@ contexts:
         3: constant.numeric.integer.hexadecimal.empty-start.rgbds-map
         4: constant.numeric.integer.hexadecimal.empty-end.rgbds-map
         5: constant.numeric.integer.hexadecimal.empty-size.rgbds-map
-    - match: '^\s*(TOTAL EMPTY)(:) (\$[0-9A-Fa-f]+) bytes?\s*$'
+    - match: '^\s*(TOTAL EMPTY)(:) (\$[0-9A-Fa-f]+) bytes?'
       scope: meta.annotation.total-empty.rgbds-map
       captures:
         1: keyword.other.total-empty.rgbds-map
         2: punctuation.separator.key-value.rgbds-map
         3: constant.numeric.integer.hexadecimal.total-empty.rgbds-map
+    - match: \s+
+    - match: '(;).+$'
+      scope: comment.line.semi-colon.rgbds-map
+      captures:
+        1: punctuation.definition.comment.begin.rgbds-map
     - match: .+
       scope: invalid.illegal.rgbds-map
 
