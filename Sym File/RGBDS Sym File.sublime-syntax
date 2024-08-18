@@ -18,17 +18,18 @@ contexts:
           pop: true
 
   main:
-    - match: '^\s*(?:([0-9A-Fa-f]+)|(BOOT)):([0-9A-Fa-f]+)\b'
+    - match: '^\s*(?:(?:([0-9A-Fa-f]+)|(BOOT))(:))?([0-9A-Fa-f]+)\b'
       captures:
         1: constant.numeric.integer.hexadecimal.bank.rgbds-sym
         2: keyword.other.boot-bank.rgbds-sym
-        3: constant.numeric.integer.hexadecimal.addr.rgbds-sym
+        3: punctuation.separator.rgbds-sym
+        4: constant.numeric.integer.hexadecimal.addr.rgbds-sym
       push: sym-name
     - match: \S+
       scope: invalid.illegal.rgbds-sym
 
   sym-name:
-    - match: \s
+    - match: \s+
     - match: '[^ \t;]+'
       scope: entity.name.symbol.rgbds-sym
       pop: true
