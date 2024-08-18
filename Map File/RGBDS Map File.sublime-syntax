@@ -16,7 +16,7 @@ contexts:
       captures:
         1: keyword.other.rgbds-map
         2: punctuation.terminator.rgbds-map
-    - match: '^\s*(ROM0|ROMX|VRAM|SRAM|WRAM0|WRAMX|OAM|HRAM)(:)\s*(\d+) bytes? used (/) (\d+) free(?: in (\d+) banks)?'
+    - match: '^\s*(ROM0|ROMX|VRAM|SRAM|WRAM0|WRAMX|OAM|HRAM)(:)\s*(\d+) bytes? used (/) (\d+) free(?: in (\d+) banks?)?'
       captures:
         1: keyword.other.bank-type.rgbds-map
         2: punctuation.separator.key-value.rgbds-map
@@ -30,21 +30,30 @@ contexts:
         1: keyword.other.bank-type.rgbds-map
         2: constant.numeric.integer.decimal.bank-number.rgbds-map
         3: punctuation.terminator.rgbds-map
-    - match: '^\s*(SECTION)(:) (\$[0-9A-Fa-f]+) \((0) bytes?\) \[(\".*\")\]'
+    - match: '^\s*(SECTION)(:) (\$[0-9A-Fa-f]+) (\()(0) bytes?(\)) (\[)(\".*\")(\])'
       captures:
         1: keyword.other.section.rgbds-map
         2: punctuation.separator.key-value.rgbds-map
         3: constant.numeric.integer.hexadecimal.section-addr.rgbds-map
-        4: constant.numeric.integer.decimal.section-size.rgbds-map
-        5: entity.name.section.rgbds-map
-    - match: '^\s*(SECTION)(:) (\$[0-9A-Fa-f]+)-(\$[0-9A-Fa-f]+) \((\$[0-9A-Fa-f]+) bytes?\) \[(\".*\")\]'
+        4: punctuation.section.parens.begin.rgbds-map
+        5: constant.numeric.integer.decimal.section-size.rgbds-map
+        6: punctuation.section.parens.end.rgbds-map
+        7: punctuation.section.brackets.begin.rgbds-map
+        8: entity.name.section.rgbds-map
+        9: punctuation.section.brackets.end.rgbds-map
+    - match: '^\s*(SECTION)(:) (\$[0-9A-Fa-f]+)(-)(\$[0-9A-Fa-f]+) (\()(\$[0-9A-Fa-f]+) bytes?(\)) (\[)(\".*\")(\])'
       captures:
         1: keyword.other.section.rgbds-map
         2: punctuation.separator.key-value.rgbds-map
         3: constant.numeric.integer.hexadecimal.section-start.rgbds-map
-        4: constant.numeric.integer.hexadecimal.section-end.rgbds-map
-        5: constant.numeric.integer.hexadecimal.section-size.rgbds-map
-        6: entity.name.section.rgbds-map
+        4: punctuation.separator.sequence.rgbds-map
+        5: constant.numeric.integer.hexadecimal.section-end.rgbds-map
+        6: punctuation.section.parens.begin.rgbds-map
+        7: constant.numeric.integer.hexadecimal.section-size.rgbds-map
+        8: punctuation.section.parens.begin.rgbds-map
+        9: punctuation.section.brackets.begin.rgbds-map
+        10: entity.name.section.rgbds-map
+        11: punctuation.section.brackets.end.rgbds-map
     - match: '^\s*(\$[0-9A-Fa-f]+)\s*(=)\s*({{symbol_name}})'
       captures:
         1: constant.numeric.integer.hexadecimal.sym-addr.rgbds-map
@@ -56,14 +65,17 @@ contexts:
         1: keyword.other.slack.rgbds-map
         2: punctuation.separator.key-value.rgbds-map
         3: constant.numeric.integer.hexadecimal.slack.rgbds-map
-    - match: '^\s*(EMPTY)(?:(:) (\$[0-9A-Fa-f]+)-(\$[0-9A-Fa-f]+) \((\$[0-9A-Fa-f]+) bytes?\))?'
+    - match: '^\s*(EMPTY)(?:(:) (\$[0-9A-Fa-f]+)(-)(\$[0-9A-Fa-f]+) (\()(\$[0-9A-Fa-f]+) bytes?(\)))?'
       scope: meta.annotation.empty.rgbds-map
       captures:
         1: keyword.other.empty.rgbds-map
         2: punctuation.separator.key-value.rgbds-map
         3: constant.numeric.integer.hexadecimal.empty-start.rgbds-map
-        4: constant.numeric.integer.hexadecimal.empty-end.rgbds-map
-        5: constant.numeric.integer.hexadecimal.empty-size.rgbds-map
+        4: punctuation.separator.sequence.rgbds-map
+        5: constant.numeric.integer.hexadecimal.empty-end.rgbds-map
+        6: punctuation.section.parens.begin.rgbds-map
+        7: constant.numeric.integer.hexadecimal.empty-size.rgbds-map
+        8: punctuation.section.parens.end.rgbds-map
     - match: '^\s*(TOTAL EMPTY)(:) (\$[0-9A-Fa-f]+) bytes?'
       scope: meta.annotation.total-empty.rgbds-map
       captures:
