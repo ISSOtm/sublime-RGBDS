@@ -28,12 +28,14 @@ contexts:
   bank:
     - match: '\b(?i:ROM0|WRAM0|OAM|HRAM)\b'
       scope: storage.type.linkerscript
-      push: expect-eol
+      push:
+        - expect-eol
+        - maybe-floating
     - match: '\b(?i:ROMX|[VS]RAM|WRAMX)\b'
       scope: storage.type.linkerscript
       push:
-        - eol-pop
-        - number
+        - expect-eol
+        - expect-number-or-floating
 
   directive:
     - match: '\b(?i:INCLUDE)\b'
@@ -70,6 +72,15 @@ contexts:
 
   maybe-optional:
     - match: '\b(?i:OPTIONAL)\b'
+      scope: storage.modifier.linkerscript
+      pop: true
+    - include: else-pop
+
+  expect-number-or-floating:
+    - include: number
+    - include: maybe-floating
+  maybe-floating:
+    - match: '\b(?i:FLOATING)\b'
       scope: storage.modifier.linkerscript
       pop: true
     - include: else-pop
