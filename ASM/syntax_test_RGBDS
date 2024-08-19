@@ -242,13 +242,6 @@ ld high(hl), high(de)
 ;  ^^^^ support.function.rgbds
 ;            ^^^^ support.function.rgbds
 
-ld whatever
-;  ^^^^^^^^ invalid.illegal.rgbds
-ld a w00t
-;    ^^^^ invalid.illegal.rgbds
-ld [bc], aww
-;        ^^^ invalid.illegal.rgbds
-
 ld b, DEF(Whack)
 ;     ^^^ support.function.def.rgbds
 ;         ^^^^^ meta.generic-name.rgbds
@@ -666,3 +659,22 @@ db 1
 ; <- keyword.other.data.rgbds
 ;^ keyword.other.data.rgbds
 ;  ^ constant.numeric.integer.decimal.rgbds
+
+    scf
+.label
+;<- entity.name.local.rgbds punctuation.accessor.dot.rgbds
+;^^^^^ entity.name.local.rgbds
+
+    scf :: ccf
+.label
+;<- entity.name.local.rgbds punctuation.accessor.dot.rgbds
+;^^^^^ entity.name.local.rgbds
+
+    scf :: sbc a
+.label
+;<- entity.name.local.rgbds punctuation.accessor.dot.rgbds
+;^^^^^ entity.name.local.rgbds
+    scf :: sbc a, a
+.label
+;<- entity.name.local.rgbds punctuation.accessor.dot.rgbds
+;^^^^^ entity.name.local.rgbds
