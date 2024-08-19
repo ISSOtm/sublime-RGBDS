@@ -978,6 +978,12 @@ contexts:
         1: keyword.other.rgbds
         2: constant.numeric.integer.hexadecimal.rgbds
       set: expect-after-opt
+    - match: '(Q)(\.?)\s*([0-9]*)'
+      captures:
+        1: keyword.other.rgbds
+        2: punctuation.separator.decimal.rgbds
+        3: constant.nmeric.integer.decimal.rgbds
+      set: expect-after-opt
     - match: '(r)\s*([0-9]*)'
       captures:
         1: keyword.other.rgbds
