@@ -677,7 +677,7 @@ contexts:
       set:
         - include: cpu-instr
         - include: eol-pop
-    - include: expect-eol
+    - include: eol-pop
 
 
 
