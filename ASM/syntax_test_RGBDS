@@ -158,7 +158,7 @@ def long rl 1 ; Not implemented yet
 ;        ^^ keyword.operator.assignment.rgbds
 ;           ^ constant.numeric.integer.decimal.rgbds
 
-def string equs "escape test: \\\"\{\}\n\r\t\1\2\3\4\5\6\7\8\9\@\?"
+def string equs "escape test: \\\"\{\}\n\r\t\0\1\2\3\4\5\6\7\8\9\@\?"
 ; <- keyword.declaration.def.rgbds
 ;^^ keyword.declaration.def.rgbds
 ;   ^^^^^^ entity.name.constant.rgbds
@@ -172,7 +172,7 @@ def string equs "escape test: \\\"\{\}\n\r\t\1\2\3\4\5\6\7\8\9\@\?"
 ;                                     ^^ constant.character.escape.rgbds
 ;                                       ^^ constant.character.escape.rgbds
 ;                                         ^^ constant.character.escape.rgbds
-;                                           ^^ variable.parameter.rgbds
+;                                           ^^ constant.character.escape.rgbds
 ;                                             ^^ variable.parameter.rgbds
 ;                                               ^^ variable.parameter.rgbds
 ;                                                 ^^ variable.parameter.rgbds
@@ -181,8 +181,10 @@ def string equs "escape test: \\\"\{\}\n\r\t\1\2\3\4\5\6\7\8\9\@\?"
 ;                                                       ^^ variable.parameter.rgbds
 ;                                                         ^^ variable.parameter.rgbds
 ;                                                           ^^ variable.parameter.rgbds
-;                                                             ^^ variable.parameter.unique.rgbds
-;                                                                 ^ punctuation.definition.string.end.rgbds
+;                                                             ^^ variable.parameter.rgbds
+;                                                               ^^ variable.parameter.unique.rgbds
+;                                                                 ^ invalid.illegal.rgbds
+;                                                                   ^ punctuation.definition.string.end.rgbds
 
 ; <- - string - invalid.illegal.rgbds
 

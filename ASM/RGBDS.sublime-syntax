@@ -83,7 +83,7 @@ contexts:
   # This is used when the macro args are part of an otherwise special scope (typically interpolation)
   # that should be returned to normally instead of treating all up to EOL as unknown
   macro-args:
-    - match: '(?=\\[0-9@#<])'
+    - match: '(?=\\[1-9@#<])'
       push: expect-macro-args
   expect-macro-args:
     - match: '\\[1-9]'
@@ -1322,8 +1322,8 @@ contexts:
       set:
         - meta_scope: meta.string.rgbds string.quoted.triple.rgbds
         - meta_include_prototype: false
-        - include: string-escapes
         - include: macro-args
+        - include: string-escapes
         - include: string-interpolation
         - match: '"""'
           scope: punctuation.definition.string.end.rgbds
@@ -1333,13 +1333,13 @@ contexts:
       set:
         - meta_scope: meta.string.rgbds string.quoted.double.rgbds
         - meta_include_prototype: false
-        - include: string-escapes
         - include: macro-args
         - include: string-interpolation
         - match: '"'
           scope: punctuation.definition.string.end.rgbds
           pop: true
         - include: line-continuation
+        - include: string-escapes
         - match: '(?=\n)'
           scope: invalid.illegal.rgbds
           pop: true
@@ -1423,8 +1423,10 @@ contexts:
       pop: true
 
   string-escapes:
-    - match: '\\[\\"{}nrt]'
+    - match: '\\[\\"{}nrt0]'
       scope: constant.character.escape.rgbds
+    - match: '\\' # Not matched by any combination
+      scope: invalid.illegal.rgbds
     - match: '%[duxXbofs%]'
       scope: constant.other.placeholder.rgbds
 
