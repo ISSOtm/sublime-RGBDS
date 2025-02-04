@@ -200,7 +200,7 @@ contexts:
       scope: keyword.declaration.end.macro.rgbds
       set: expect-eol # Implicit `pop` here!
     # Nested plain macro definitions are illegal
-    - match: '^{{symbol_name}}\s*:\s*(?i:macro)\b'
+    - match: '^\s*((?i:macro))\s+({{symbol_name}})\b'
       scope: invalid.illegal.rgbds
     - include: main
 
