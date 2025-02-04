@@ -582,19 +582,29 @@ db "{inter\1polation}", 0, 1, 2
 ; `def` should degrade gracefully with macro args and all
  def
 ;^^^ keyword.declaration.def.rgbds
+ def \ ; ...
+ /* ... */ \ ; ...
+ line equs "continued"
+;     ^^^^ keyword.operator.assignment.rgbds keyword.operator.word.rgbds
  redef
 ;^^^^^ keyword.operator.assignment.redef.rgbds
  def a\1b equ other
 ;^^^ keyword.declaration.def.rgbds
 ;     ^^ variable.parameter.rgbds
 ;    ^^^^ entity.name.constant.rgbds
+;        ^^^^^^^^^^^ - entity.name.constant.rgbds
 ;         ^^^ keyword.operator.assignment.rgbds keyword.operator.word.rgbds
+ def a\1b += other
+;^^^ keyword.declaration.def.rgbds
+;     ^^ variable.parameter.rgbds
+;         ^^ keyword.operator.assignment.rgbds
  def \1 equ thing
 ;^^^ keyword.declaration.def.rgbds
 ;    ^^ variable.parameter.rgbds
 ;       ^^^ keyword.operator.assignment.rgbds keyword.operator.word.rgbds
  def a{strsym}b equ blah
 ;^^^ keyword.declaration.def.rgbds
+;    ^^^^^^^^^^ entity.name.constant.rgbds
 ;     ^^^^^^^^ meta.interpolation.rgbds
 ;               ^^^ keyword.operator.assignment.rgbds keyword.operator.word.rgbds
 

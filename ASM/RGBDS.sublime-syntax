@@ -11,7 +11,7 @@ scope: source.rgbds
 
 variables:
   symbol_first_char: '[a-zA-Z_]'
-  symbol_char: '[a-zA-Z0-9_\\@#]'
+  symbol_char: '[a-zA-Z0-9_@#]'
   reserved: |-
     (?:\b(?ix: # Possible values for a label that conflict with a token
       adc|add|and|bit|call|ccf|cpl|cp|daa|dec|di|ei|halt|inc|jp|jr|ld|ldi|ldd|ldio|ldh|nop|or|pop|push|res|reti|ret|rlca|rlc|rla|rl|rrc|rrca|rra|rr|rst|sbc|scf|set|sla|sra|srl|stop|sub|swap|xor| # Instructions
@@ -42,6 +42,13 @@ contexts:
         - unknown
         - expect-macro-args
     - include: interpolation
+
+  # For when we don't want `unknown` to be applied after meta-constructs.
+  timid-prototype:
+    - include: line-continuation
+    - include: block-comment
+    - include: macro-args
+    - include: timid-interpolation
 
   # There is no need to separate most of these, but categorization helps, and then why
   # not just use the same one as RGBDS' grammar?
@@ -143,39 +150,11 @@ contexts:
 
 
   directive:
-    - match: '\b(?i:(def)|(redef))\s+'
+    - match: '(?m)\b(?i:(def)|(redef))(?!{{symbol_char}})\s*'
       captures:
         1: keyword.declaration.def.rgbds
         2: keyword.operator.assignment.redef.rgbds
-      push:
-        - meta_include_prototype: false
-        - include: block-comment
-        - include: macro-args
-        - include: timid-interpolation
-        - match: '(?:({{symbol_name}})\s+)?((?i:equs))(?!{{symbol_char}})'
-          captures:
-            1: entity.name.constant.rgbds
-            2: keyword.operator.assignment.rgbds keyword.operator.word.rgbds
-          set:
-            - expect-eol
-            - expect-string
-        - match: '(?:({{symbol_name}})\s+)?((?i:equ|rb|rw|rl))(?!{{symbol_char}})'
-          captures:
-            1: entity.name.constant.rgbds
-            2: keyword.operator.assignment.rgbds keyword.operator.word.rgbds
-          set:
-            - expect-eol
-            - expect-num-expression
-        - match: '{{symbol_name}}'
-          scope: entity.name.rgbds
-          set:
-            - match: '(?:[-+*/%&|^]|<<|>>)?='
-              scope: keyword.operator.assignment.rgbds
-              set:
-                - expect-eol
-                - expect-num-expression
-            - include: eol-pop
-        - include: eol-pop
+      push: def
 
     - match: '\b(?i:if)\b'
       scope: keyword.control.conditional.if.rgbds
@@ -224,6 +203,48 @@ contexts:
     - match: '^{{symbol_name}}\s*:\s*(?i:macro)\b'
       scope: invalid.illegal.rgbds
     - include: main
+
+  def:
+    # Try to apply a different scope *to the name* depending on whether the symbol is mutable or not.
+    # The name cannot be matched as a regex, because then sub-elements (macro args, interpolations...)
+    # cannot get their scopes.
+    - meta_include_prototype: false
+    - include: timid-prototype
+    - match: '(?=\S*(?m:\\\s*(?:;[^\n]*)?\n)*\s*(?i:equs?|rb|rw|rl)(?!{{symbol_char}}))'
+      set:
+        - meta_include_prototype: false
+        - include: timid-prototype
+        - meta_content_scope: entity.name.constant.rgbds
+        # `set` is required so that the `meta` above ends before the keyword itself is matched.
+        - match: '(?=\s*\b(?i:equs?|r[bwl])(?!{{symbol_char}}))'
+          set:
+            - match: '\b(?i:equs)(?!{{symbol_char}})'
+              scope: keyword.operator.assignment.rgbds keyword.operator.word.rgbds
+              set:
+                - expect-eol
+                - expect-string
+            - match: '\b(?i:equ|r[bwl])(?!{{symbol_char}})'
+              scope: keyword.operator.assignment.rgbds keyword.operator.word.rgbds
+              set:
+                - expect-eol
+                - expect-num-expression
+            - include: eol-pop
+        - include: eol-pop
+    - match: '(?=\S*(?m:\\\s*(?:;[^\n]*)?\n)*\s*(?:[-+*/%&|^]|<<|>>)?=)'
+      set:
+        - meta_include_prototype: false
+        - include: timid-prototype
+        - meta_content_scope: entity.name.rgbds
+        - match: '(?=\s*(?:[-+*/%&|^]|<<|>>)?=)'
+          set:
+            - match: '(?:[-+*/%&|^]|<<|>>)?='
+              scope: keyword.operator.assignment.rgbds
+              set:
+                - expect-eol
+                - expect-num-expression
+            - include: eol-pop
+        - include: eol-pop
+    - include: eol-pop
 
   label:
     # Exported local label
