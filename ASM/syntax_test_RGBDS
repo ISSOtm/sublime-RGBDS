@@ -248,6 +248,15 @@ ld b, DEF(Whack)
 ;     ^^^ support.function.def.rgbds
 ;         ^^^^^ meta.generic-name.rgbds
 
+cpl :: cpl a :: cpl HIGH(af) :: cpl b
+; <- variable.function.instruction.rgbds
+;^^ variable.function.instruction.rgbds
+;   ^^ punctuation.separator.sequence.rgbds
+;      ^^^ variable.function.instruction.rgbds
+;          ^ keyword.other.register.rgbds
+;            ^^ punctuation.separator.sequence.rgbds
+;               ^^^ variable.function.instruction.rgbds
+
 IF 42
 
 ; <- meta.block.if.rgbds

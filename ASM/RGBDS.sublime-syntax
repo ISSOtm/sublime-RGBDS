@@ -259,9 +259,14 @@ contexts:
 
   cpu-instr:
     # Instructions without args
-    - match: '\b(?i:ccf|cpl|daa|di|ei|halt|nop|reti|rla|rlca|rra|rrca|scf)\b'
+    - match: '\b(?i:ccf|daa|di|ei|halt|nop|reti|rla|rlca|rra|rrca|scf)\b'
       scope: variable.function.instruction.rgbds
       push: more-cpu-instr
+    - match: '\b(?i:cpl)\b' # This one takes a single *optional* arg
+      scope: variable.function.instruction.rgbds
+      push:
+        - more-cpu-instr
+        - expect-a
     # Instructions accepting a single reg8
     - match: '\b(?i:rl|rlc|rr|rrc|sla|sra|srl|swap)\b'
       scope: variable.function.instruction.rgbds
