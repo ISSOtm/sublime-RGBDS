@@ -120,7 +120,7 @@ contexts:
 
   # Duplicated in string-interpolation due to special handling
   interpolation:
-    - match: '({)(?:([^}:]*)(:))?'
+    - match: '(\{)(?:([^}:]*)(:))?'
       captures:
         1: punctuation.section.interpolation.begin.rgbds
         2: constant.other.format-spec.rgbds
@@ -1457,7 +1457,7 @@ contexts:
       scope: constant.other.placeholder.rgbds
 
   timid-interpolation:
-    - match: '({)(?:([^}:]*)(:))?'
+    - match: '(\{)(?:([^}:]*)(:))?'
       captures:
         1: punctuation.section.interpolation.begin.rgbds
         2: constant.other.format-spec.rgbds
@@ -1475,7 +1475,7 @@ contexts:
           push: expect-symbol
 
   string-interpolation:
-    - match: '({)(?:([^}:]*)(:))?'
+    - match: '(\{)(?:([^}:]*)(:))?'
       captures:
         1: punctuation.section.interpolation.begin.rgbds
         2: constant.other.format-spec.rgbds
