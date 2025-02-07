@@ -1,0 +1,13 @@
+Sublime-RGBDS 2.6.0 changelog:
+
+Catching up with new RGBDS features!
+
+ - New `\0` escape character in strings
+ - `cpl a`
+ - Better handling of incomplete `def`/`redef` lines
+ - Fixed some invalid internal syntax, which enables compat with Sublime Text's new regex engine
+ - The `.` special symbol name
+ - Nested macro definitions weren't properly rejected
+
+If you would like to help, some of GBDev's projects are open for help.
+Please contact me (https://eldred.fr/about)!
