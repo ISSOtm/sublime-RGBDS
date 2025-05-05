@@ -693,3 +693,15 @@ db 1
 .label
 ;<- entity.name.local.rgbds punctuation.accessor.dot.rgbds
 ;^^^^^ entity.name.local.rgbds
+
+macro regression_test
+    println strcat("\<x>", "test")
+;                  ^^^^^^ meta.string.rgbds string.quoted.double.rgbds
+;                  ^ punctuation.definition.string.begin.rgbds
+;                   ^^^^ variable.parameter.rgbds
+;                       ^ punctuation.definition.string.end.rgbds
+;                        ^ punctuation.separator.sequence.rgbds
+;                          ^^^^^^ meta.string.rgbds string.quoted.double.rgbds
+;                          ^ punctuation.definition.string.begin.rgbds
+;                               ^ punctuation.definition.string.end.rgbds
+endm

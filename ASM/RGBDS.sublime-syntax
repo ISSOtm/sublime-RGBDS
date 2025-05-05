@@ -33,7 +33,7 @@ variables:
 
 
 # This is written more or less following RGBDS' grammar definition
-# https://github.com/gbdev/rgbds/blob/master/src/asm/asmy.y
+# https://github.com/gbdev/rgbds/blob/master/src/asm/parser.y
 contexts:
   prototype:
     - include: line-continuation
@@ -116,7 +116,7 @@ contexts:
   expect-closing-angle:
     - meta_scope: variable.parameter.rgbds
     - match: '>'
-      set: unknown
+      pop: true
     - include: else-pop
 
   # Duplicated in string-interpolation due to special handling
