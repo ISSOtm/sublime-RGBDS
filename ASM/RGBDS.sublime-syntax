@@ -10,20 +10,21 @@ file_extensions:
 scope: source.rgbds
 
 variables:
-  symbol_first_char: '[a-zA-Z_]'
-  symbol_char: '[a-zA-Z0-9_@#]'
+  symbol_first_char: '[a-zA-Z_#]'
+  symbol_char: '[a-zA-Z0-9_@#$]'
   reserved: |-
     (?:\b(?ix: # Possible values for a label that conflict with a token
       adc|add|and|bit|call|ccf|cpl|cp|daa|dec|di|ei|halt|inc|jp|jr|ld|ldi|ldd|ldio|ldh|nop|or|pop|push|res|reti|ret|rlca|rlc|rla|rl|rrc|rrca|rra|rr|rst|sbc|scf|set|sla|sra|srl|stop|sub|swap|xor| # Instructions
       nz|z|nc| # Conditions (`c` is in the register list)
       af|bc|de|hl[id]?|sp|a|b|c|d|e|h|l| # Registers
-      def|bank|align|round|ceil|floor|div|mul|sin|cos|tan|asin|acos|atan|atan2|pow|log|high|low|isconst|sizeof|startof|strcmp|strin|strsub|strlen|strcat|strupr|strlwr|strrin|strrpl|strfmt|charlen|charsub| # Functions
-      include|print|println|export|ds|db|dw|dl|section|purge|rsreset|rsset|incbin|charmap|newcharmap|setcharmap|fail|warn|fatal|assert|static_assert|shift|opt|break| # Directives
+      def|fragment|bank|align|sizeof|startof|round|ceil|floor|div|mul|fmod|pow|log|sin|cos|tan|asin|acos|atan|atan2|pow|log|high|low|isconst|bitwidth|tzcount| # Numeric functions
+      strcat|strchar|strcmp|strfind|strfmt|strin|strlen|strlwr|strrfind|strrin|strrpl|strslice|strsub|strupr| # String functions
+      charcmp|charlen|charsize|charsub|incharmap|revchar| # Charmap functions
+      include|print|println|export|ds|db|dw|dl|section|endsection|purge|rsreset|rsset|incbin|charmap|newcharmap|setcharmap|fail|warn|fatal|assert|static_assert|shift|opt|break| # Directives
       macro|endm|rept|for|endr|load|endl|pushc|popc|union|nextu|endu|pushs|pops|pusho|popo| # Block delimiters
       if|else|elif|endc| # Conditionals
       wram0|vram|romx|rom0|hram|wramx|sram|oam|fragment| # Section types
-      rb|rw|equ|equs|redef| # Variable definitions (`set` and `rl` are in the instruction list)
-      \. # A period. Period.
+      rb|rw|equ|equs|redef| # Variable definitions (`rl` is in the instruction list)
     )(?!{{symbol_char}}))
 
   symbol_name: '(?:(?!{{reserved}}){{symbol_first_char}}{{symbol_char}}*(?!{{symbol_char}}))'
@@ -102,7 +103,7 @@ contexts:
     - match: '\\#'
       scope: variable.parameter.all.rgbds
       pop: true
-    - match: '\\<[0-9]+>'
+    - match: '\\<-?[0-9]+>'
       scope: variable.parameter.rgbds
       pop: true
     # Otherwise, it must be followed by a symbol name
@@ -1219,7 +1220,7 @@ contexts:
     # Duplicated at scope `symbol`, keep in sync
     - match: '@'
       scope: constant.language.rgbds
-    - match: '\b(?i:_RS|__DATE__|__TIME__|__ISO_8601_LOCAL__|__ISO_8601_UTC__|__UTC_YEAR__|__UTC_MONTH__|__UTC_DAY__|__UTC_HOUR__|__UTC_MINUTE__|__UTC_SECOND__|__RGBDS_MAJOR__|__RGBDS_MINOR__|__RGBDS_PATCH__|__RGBDS_VERSION__)\b'
+    - match: '\b(?i:_RS|__DATE__|__TIME__|__ISO_8601_LOCAL__|__ISO_8601_UTC__|__UTC_YEAR__|__UTC_MONTH__|__UTC_DAY__|__UTC_HOUR__|__UTC_MINUTE__|__UTC_SECOND__|__RGBDS_MAJOR__|__RGBDS_MINOR__|__RGBDS_PATCH__|__RGBDS_VERSION__|\.)\b'
       scope: constant.language.rgbds
     - match: '\b(?i:_NARG)\b'
       scope: variable.parameter.rgbds
@@ -1259,7 +1260,7 @@ contexts:
         - expect-num-expression
         - expect-arg-begin
     # Binary
-    - match: '\b(?i:div|mul|atan2|pow|log)\b'
+    - match: '\b(?i:div|mul|atan2|pow|log|fmod)\b'
       scope: support.function.fixed-point.rgbds
       push:
         - meta-func-call
@@ -1270,7 +1271,7 @@ contexts:
         - expect-arg-begin
     # String built-ins
     # Unary string
-    - match: '\b(?i:charlen|incharmap|strlen)\b'
+    - match: '\b(?i:charlen|incharmap|strlen|charsize)\b'
       scope: support.function.string.rgbds
       push:
         - meta-func-call
@@ -1278,7 +1279,7 @@ contexts:
         - expect-string
         - expect-arg-begin
     # Binary string
-    - match: '\b(?i:strcmp|strin|strrin)\b'
+    - match: '\b(?i:strcmp|strin|strrin|strfind|strrfind|charcmp)\b'
       scope: support.function.string.rgbds
       push:
         - meta-func-call
@@ -1317,7 +1318,7 @@ contexts:
         - expect-arg-end
         - expect-symbol
         - expect-arg-begin
-    - match: '\b(?i:high|low|isconst)\b'
+    - match: '\b(?i:high|low|isconst|btiwidth|tzcount)\b'
       scope: support.function.rgbds
       push:
         - meta-func-call
@@ -1407,7 +1408,7 @@ contexts:
         - expect-symbol
         - expect-arg-begin
     # Binary builtin
-    - match: '\b(?i:charsub)\b'
+    - match: '\b(?i:charsub|strchar)\b'
       scope: support.function.string.rgbds
       set:
         - meta-func-call
@@ -1416,8 +1417,8 @@ contexts:
         - expect-comma
         - expect-string
         - expect-arg-begin
-    # Trinary..? builtins
-    - match: '\b(?i:strsub|strrpl)\b'
+    # Ternary builtins
+    - match: '\b(?i:strsub|strrpl|strslice)\b'
       scope: support.function.string.rgbds
       set:
         - meta-func-call
@@ -1435,6 +1436,13 @@ contexts:
         - meta-func-call
         - expect-arg-end
         - expect-string-list
+        - expect-arg-begin
+    - match: '\b(?i:revchar)\b'
+      scope: support.function.string.rgbds
+      set:
+        - meta-func-call
+        - expect-arg-end
+        - expect-expr-list
         - expect-arg-begin
     - match: '\b(?i:strfmt)\b'
       scope: support.function.string.rgbds
