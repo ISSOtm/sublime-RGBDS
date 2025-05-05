@@ -1,0 +1,11 @@
+Sublime-RGBDS 2.7.0 changelog:
+
+Catching up with new RGBDS features!
+
+ - New string and numeric functions
+ - New symbol name characters
+ - Negative macro arguments
+ - Fixed bracketed macro args causing strings to take up the rest of their line
+
+If you would like to help, some of GBDev's projects are open for help.
+Please contact me (https://eldred.fr/about)!
