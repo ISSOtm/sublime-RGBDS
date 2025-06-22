@@ -785,7 +785,7 @@ contexts:
         - expect-eol
         - expect-expr-list
         - expect-ds-align
-    - match: '\b(?i:section)\b'
+    - match: '\b(?i:section|pushs)\b'
       scope: keyword.declaration.section.rgbds
       push:
         - expect-eol
@@ -878,11 +878,11 @@ contexts:
       push:
         - expect-eol
         - expect-symbol-list
-    - match: '\b(?i:pushs|pops)\b'
+    - match: '\b(?i:pops)\b'
       scope: keyword.other.rgbds
-    - match: '\b(?i:pusho|popo)\b'
+    - match: '\b(?i:popo)\b'
       scope: keyword.other.rgbds
-    - match: '\b(?i:opt)\b'
+    - match: '\b(?i:opt|pusho)\b'
       scope: keyword.other.rgbds
       push:
         - expect-eol
