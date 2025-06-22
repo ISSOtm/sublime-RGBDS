@@ -211,6 +211,8 @@ contexts:
     # cannot get their scopes.
     - meta_include_prototype: false
     - include: timid-prototype
+    - match: '{{reserved}}'
+      pop: true
     - match: '(?=\S*(?m:\\\s*(?:;[^\n]*)?\n)*\s*(?i:equs?|rb|rw|rl)(?!{{symbol_char}}))'
       set:
         - meta_include_prototype: false
